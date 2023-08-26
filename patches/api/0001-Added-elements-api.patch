@@ -1,0 +1,684 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Sun, 27 Aug 2023 01:46:25 +0800
+Subject: [PATCH] Added elements api
+
+
+diff --git a/build.gradle.kts b/build.gradle.kts
+index 8045f92ffdfb4164bcbef99c41359590c45f9006..769a87d32b0858b5e9b0ae9aefe97f059327e48d 100644
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -1,6 +1,7 @@
+ plugins {
+     `java-library`
+     `maven-publish`
++    kotlin("jvm") version "1.9.0"
+ }
+ 
+ java {
+diff --git a/src/main/java/org/bukkit/Bukkit.java b/src/main/java/org/bukkit/Bukkit.java
+index f78b5fd3c3347d28da58777bff88903d2eb140f6..5004cab183c687241c5ccadbf2492903d97e2e23 100644
+--- a/src/main/java/org/bukkit/Bukkit.java
++++ b/src/main/java/org/bukkit/Bukkit.java
+@@ -14,6 +14,8 @@ import java.util.Set;
+ import java.util.UUID;
+ import java.util.function.Consumer;
+ import java.util.logging.Logger;
++
++import net.deechael.elements.api.ElementManager;
+ import org.bukkit.Warning.WarningState;
+ import org.bukkit.advancement.Advancement;
+ import org.bukkit.block.data.BlockData;
+@@ -2752,6 +2754,16 @@ public final class Bukkit {
+     }
+     // Paper end - Folia region threading API
+ 
++    // Artist start
++    /**
++     * Returns the element manager
++     * @return element manager
++     */
++    public ElementManager getElementManager() {
++        return server.getElementManager();
++    }
++    // Artist end
++
+     @NotNull
+     public static Server.Spigot spigot() {
+         return server.spigot();
+diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
+index 8d8fe04e6b09d2a5b1cc05002073df5c58cdcb96..8a22f65498f51507ea09b522a17e360035184c5e 100644
+--- a/src/main/java/org/bukkit/Server.java
++++ b/src/main/java/org/bukkit/Server.java
+@@ -14,6 +14,8 @@ import java.util.Set;
+ import java.util.UUID;
+ import java.util.function.Consumer;
+ import java.util.logging.Logger;
++
++import net.deechael.elements.api.ElementManager;
+ import org.bukkit.Warning.WarningState;
+ import org.bukkit.advancement.Advancement;
+ import org.bukkit.block.data.BlockData;
+@@ -2404,4 +2406,12 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
+      */
+     boolean isOwnedByCurrentRegion(@NotNull Entity entity);
+     // Paper end - Folia region threading API
++
++    // Artist start
++    /**
++     * Returns the element manager
++     * @return element manager
++     */
++    ElementManager getElementManager();
++    // Artist end
+ }
+diff --git a/src/main/kotlin/net/deechael/elements/api/ElementGauge.kt b/src/main/kotlin/net/deechael/elements/api/ElementGauge.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..a65adc2837c341b54a7fa5d1b80fb53c94a4b4a5
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/ElementGauge.kt
+@@ -0,0 +1,19 @@
++package net.deechael.elements.api
++
++data class ElementGauge(
++    val unit: Int,
++    val decimal: Int = 0
++) {
++
++    fun toDouble(): Double {
++        return "$unit.$decimal".toDouble()
++    }
++
++    fun multiple(value: Double): ElementGauge {
++        val newValue = this.toDouble() * value
++        val newUnit = ((newValue - (newValue % 1)) / 1).toInt()
++        val newDecimal = (((newValue - newUnit) - ((newValue - newUnit) % 0.1)) / 0.1).toInt()
++        return ElementGauge(newUnit, newDecimal)
++    }
++
++}
+diff --git a/src/main/kotlin/net/deechael/elements/api/ElementManager.kt b/src/main/kotlin/net/deechael/elements/api/ElementManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..3f33eb42f9fe960c61d4654ba7c9896c30d1cc1f
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/ElementManager.kt
+@@ -0,0 +1,51 @@
++package net.deechael.elements.api
++
++import net.deechael.elements.api.application.ApplicationTrigger
++import net.deechael.elements.api.application.ElementApplicationManager
++import net.deechael.elements.api.application.source.SourceManager
++import net.deechael.elements.api.mute.ElementMuteManager
++import net.deechael.elements.api.reaction.ElementReaction
++import net.deechael.elements.api.reaction.ElementReactionTrigger
++import java.awt.Color
++
++interface ElementManager {
++
++    fun hasElementType(id: String): Boolean
++
++    fun getElementType(id: String): ElementType
++
++    fun getElementTypes(): List<ElementType>
++
++    fun registerElementType(
++        id: String,
++        icon: String,
++        color: Color,
++        applicable: Boolean,
++        reactable: Boolean,
++        isReactionElement: Boolean = false,
++        trigger: ApplicationTrigger = ApplicationTrigger.EMPTY_TRIGGER
++    ): ElementType
++
++    fun hasElementReaction(id: String): Boolean
++
++    fun getElementReaction(id: String): ElementReaction
++
++    fun getElementReactions(): List<ElementReaction>
++
++    fun getElementReactionsWithFormerType(formerElementType: ElementType): List<ElementReaction>
++
++    fun registerElementReaction(
++        id: String,
++        color: Color,
++        formerElementType: ElementType,
++        latterElementTypes: Array<ElementType>,
++        trigger: ElementReactionTrigger
++    ): ElementReaction
++
++    fun getApplicationManager(): ElementApplicationManager
++
++    fun getSourceManager(): SourceManager
++
++    fun getMuteManager(): ElementMuteManager
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/ElementSourceType.kt b/src/main/kotlin/net/deechael/elements/api/ElementSourceType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..38c5699c6fc4deda0288bf738aaab32bb7749517
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/ElementSourceType.kt
+@@ -0,0 +1,7 @@
++package net.deechael.elements.api
++
++enum class ElementSourceType {
++
++    ENVIRONMENT, ENTITY, REACTION, PLUGIN
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/ElementType.kt b/src/main/kotlin/net/deechael/elements/api/ElementType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..3acdf43273bb8437b068a91a6e4ced963a3ffd5c
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/ElementType.kt
+@@ -0,0 +1,21 @@
++package net.deechael.elements.api
++
++import net.deechael.elements.api.application.ApplicationTrigger
++import java.awt.Color
++
++interface ElementType {
++
++    fun getId(): String
++
++    fun getIcon(): String
++
++    fun getColor(): Color
++
++    fun isApplicable(): Boolean
++
++    fun isReactable(): Boolean
++
++    fun isReactionElement(): Boolean
++
++    fun getTrigger(): ApplicationTrigger
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/ElementTypeRemovalReason.kt b/src/main/kotlin/net/deechael/elements/api/ElementTypeRemovalReason.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..b6155c5cd88f374979eabb9c510909361f7db8ad
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/ElementTypeRemovalReason.kt
+@@ -0,0 +1,7 @@
++package net.deechael.elements.api
++
++enum class ElementTypeRemovalReason {
++
++    RUNNING_OUT, REACTED, PLUGIN
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/application/ApplicationTrigger.kt b/src/main/kotlin/net/deechael/elements/api/application/ApplicationTrigger.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..fa731cadc91210d1886b610cf1d66623758d525c
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/application/ApplicationTrigger.kt
+@@ -0,0 +1,18 @@
++package net.deechael.elements.api.application
++
++import net.deechael.elements.api.application.source.ApplicationSource
++import org.bukkit.entity.Entity
++
++@FunctionalInterface
++fun interface ApplicationTrigger {
++
++    fun trigger(applicationSource: ApplicationSource, sufferer: Entity)
++
++    companion object {
++
++        @JvmStatic
++        val EMPTY_TRIGGER = ApplicationTrigger { _, _ -> }
++
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/application/ElementApplication.kt b/src/main/kotlin/net/deechael/elements/api/application/ElementApplication.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..61b5f0af059b5e4e2990bf0135493022c873fb52
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/application/ElementApplication.kt
+@@ -0,0 +1,19 @@
++package net.deechael.elements.api.application
++
++import net.deechael.elements.api.ElementGauge
++import net.deechael.elements.api.ElementType
++import net.deechael.elements.api.application.source.ApplicationSource
++
++interface ElementApplication {
++
++    fun clear()
++
++    fun getAppliedElementTypes(): List<ElementType>
++
++    fun getGauge(elementType: ElementType): ElementGauge
++
++    fun applyElement(source: ApplicationSource)
++
++    fun applyElementWithDamage(source: ApplicationSource, damage: Double): Double
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/application/ElementApplicationManager.kt b/src/main/kotlin/net/deechael/elements/api/application/ElementApplicationManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..c538fb753ef5d989e3d791842902c6d74e2022b6
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/application/ElementApplicationManager.kt
+@@ -0,0 +1,14 @@
++package net.deechael.elements.api.application
++
++import net.deechael.elements.api.application.source.ApplicationSource
++import org.bukkit.entity.Entity
++
++interface ElementApplicationManager {
++
++    fun hasApplied(entity: Entity): Boolean
++
++    fun getApplication(entity: Entity): ElementApplication
++
++    fun doElementalDamage(sufferer: Entity, source: ApplicationSource, damage: Double)
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/application/source/ApplicationSource.kt b/src/main/kotlin/net/deechael/elements/api/application/source/ApplicationSource.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..cce0ea516642ac9b162f09b8923ad244f0c4dc0a
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/application/source/ApplicationSource.kt
+@@ -0,0 +1,15 @@
++package net.deechael.elements.api.application.source
++
++import net.deechael.elements.api.ElementGauge
++import net.deechael.elements.api.ElementSourceType
++import net.deechael.elements.api.ElementType
++
++interface ApplicationSource {
++
++    fun getElementType(): ElementType
++
++    fun getElementGauge(): ElementGauge
++
++    fun getElementSourceType(): ElementSourceType
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/application/source/EntitySource.kt b/src/main/kotlin/net/deechael/elements/api/application/source/EntitySource.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..04e0aeb2905e81d0806df556f117b3f976cfb712
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/application/source/EntitySource.kt
+@@ -0,0 +1,14 @@
++package net.deechael.elements.api.application.source
++
++import net.deechael.elements.api.ElementSourceType
++import org.bukkit.entity.Entity
++
++interface EntitySource : ApplicationSource {
++
++    override fun getElementSourceType(): ElementSourceType {
++        return ElementSourceType.ENTITY
++    }
++
++    fun getEntity(): Entity
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/application/source/EnvironmentSource.kt b/src/main/kotlin/net/deechael/elements/api/application/source/EnvironmentSource.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..5f166edaba0a9c25e14a0e1aa248e466ad146164
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/application/source/EnvironmentSource.kt
+@@ -0,0 +1,14 @@
++package net.deechael.elements.api.application.source
++
++import net.deechael.elements.api.ElementSourceType
++import org.bukkit.Location
++
++interface EnvironmentSource : ApplicationSource {
++
++    override fun getElementSourceType(): ElementSourceType {
++        return ElementSourceType.ENVIRONMENT
++    }
++
++    fun getLocation(): Location
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/application/source/PluginSource.kt b/src/main/kotlin/net/deechael/elements/api/application/source/PluginSource.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..c85c1147337e8f4f43191e523bb74b6f3f843ed3
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/application/source/PluginSource.kt
+@@ -0,0 +1,14 @@
++package net.deechael.elements.api.application.source
++
++import net.deechael.elements.api.ElementSourceType
++import org.bukkit.plugin.Plugin
++
++interface PluginSource : ApplicationSource {
++
++    override fun getElementSourceType(): ElementSourceType {
++        return ElementSourceType.PLUGIN
++    }
++
++    fun getPlugin(): Plugin
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/application/source/ReactionSource.kt b/src/main/kotlin/net/deechael/elements/api/application/source/ReactionSource.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b894f86678f1208eaa1144f79aa1ceeeffb59fe
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/application/source/ReactionSource.kt
+@@ -0,0 +1,14 @@
++package net.deechael.elements.api.application.source
++
++import net.deechael.elements.api.ElementSourceType
++import net.deechael.elements.api.reaction.ElementReaction
++
++interface ReactionSource : ApplicationSource {
++
++    override fun getElementSourceType(): ElementSourceType {
++        return ElementSourceType.REACTION
++    }
++
++    fun getReaction(): ElementReaction
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/application/source/SourceManager.kt b/src/main/kotlin/net/deechael/elements/api/application/source/SourceManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3edce09c56cca9a52439847885c816363c48c86
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/application/source/SourceManager.kt
+@@ -0,0 +1,36 @@
++package net.deechael.elements.api.application.source
++
++import net.deechael.elements.api.ElementGauge
++import net.deechael.elements.api.ElementType
++import net.deechael.elements.api.reaction.ElementReaction
++import org.bukkit.Location
++import org.bukkit.entity.Entity
++import org.bukkit.plugin.Plugin
++
++interface SourceManager {
++
++    fun entity(
++        entity: Entity,
++        elementType: ElementType,
++        gauge: ElementGauge
++    ): EntitySource
++
++    fun environment(
++        location: Location,
++        elementType: ElementType,
++        gauge: ElementGauge
++    ): EnvironmentSource
++
++    fun plugin(
++        plugin: Plugin,
++        elementType: ElementType,
++        gauge: ElementGauge
++    ): PluginSource
++
++    fun reaction(
++        reaction: ElementReaction,
++        elementType: ElementType,
++        gauge: ElementGauge
++    ): ReactionSource
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/mute/ElementMuteManager.kt b/src/main/kotlin/net/deechael/elements/api/mute/ElementMuteManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..66f845455159e9d0acad069930fb10e234b140c9
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/mute/ElementMuteManager.kt
+@@ -0,0 +1,16 @@
++package net.deechael.elements.api.mute
++
++import net.deechael.elements.api.ElementType
++import org.bukkit.entity.Entity
++
++interface ElementMuteManager {
++
++    fun addMuteElementType(entity: Entity, elementType: ElementType)
++
++    fun removeMuteElementType(entity: Entity, elementType: ElementType)
++
++    fun getMuteElementTypes(entity: Entity): List<ElementType>
++
++    fun hasMuteElementType(entity: Entity, elementType: ElementType): Boolean
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/reaction/ElementReaction.kt b/src/main/kotlin/net/deechael/elements/api/reaction/ElementReaction.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..b912e3b035bfc8deed881b5376be649c1fc88147
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/reaction/ElementReaction.kt
+@@ -0,0 +1,18 @@
++package net.deechael.elements.api.reaction
++
++import net.deechael.elements.api.ElementType
++import java.awt.Color
++
++interface ElementReaction {
++
++    fun getId(): String
++
++    fun getColor(): Color
++
++    fun getFormerElementType(): ElementType
++
++    fun getLatterElementTypes(): Array<ElementType>
++
++    fun getTrigger(): ElementReactionTrigger
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/api/reaction/ElementReactionTrigger.kt b/src/main/kotlin/net/deechael/elements/api/reaction/ElementReactionTrigger.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..7d1a6b4e0d3291da025400f8ca18bf3ac438f5f5
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/api/reaction/ElementReactionTrigger.kt
+@@ -0,0 +1,28 @@
++package net.deechael.elements.api.reaction
++
++import net.deechael.elements.api.ElementGauge
++import net.deechael.elements.api.application.source.ApplicationSource
++import org.bukkit.entity.Entity
++
++@FunctionalInterface
++interface ElementReactionTrigger {
++
++    fun trigger(
++        reaction: ElementReaction,
++        applicationSource: ApplicationSource,
++        sufferer: Entity,
++        formerElementTypeGauge: ElementGauge
++    ) {
++    }
++
++    fun triggerDamage(
++        reaction: ElementReaction,
++        applicationSource: ApplicationSource,
++        sufferer: Entity,
++        formerElementTypeGauge: ElementGauge,
++        originalDamage: Double
++    ): Double {
++        return originalDamage
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/event/ElementAppliedEvent.kt b/src/main/kotlin/net/deechael/elements/event/ElementAppliedEvent.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..1918175ecfe72e52b481349afbfb3d24b692b600
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/event/ElementAppliedEvent.kt
+@@ -0,0 +1,39 @@
++package net.deechael.elements.event
++
++import net.deechael.elements.api.application.source.ApplicationSource
++import org.bukkit.entity.Entity
++import org.bukkit.event.Cancellable
++import org.bukkit.event.HandlerList
++import org.bukkit.event.entity.EntityEvent
++
++class ElementAppliedEvent(
++    what: Entity,
++    val source: ApplicationSource,
++) : EntityEvent(what), Cancellable {
++
++    private var cancelled = false
++
++    override fun getHandlers(): HandlerList {
++        return HANDLER_LIST
++    }
++
++    override fun isCancelled(): Boolean {
++        return this.cancelled
++    }
++
++    override fun setCancelled(cancel: Boolean) {
++        this.cancelled = cancel
++    }
++
++    companion object {
++
++        private val HANDLER_LIST = HandlerList()
++
++        @JvmStatic
++        fun getHandlerList(): HandlerList {
++            return HANDLER_LIST
++        }
++
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/event/ElementReactedEvent.kt b/src/main/kotlin/net/deechael/elements/event/ElementReactedEvent.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..46e42afb870a2700ddf2d989f3d9a91a824886ee
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/event/ElementReactedEvent.kt
+@@ -0,0 +1,41 @@
++package net.deechael.elements.event
++
++import net.deechael.elements.api.application.source.ApplicationSource
++import net.deechael.elements.api.reaction.ElementReaction
++import org.bukkit.entity.Entity
++import org.bukkit.event.Cancellable
++import org.bukkit.event.HandlerList
++import org.bukkit.event.entity.EntityEvent
++
++class ElementReactedEvent(
++    what: Entity,
++    val source: ApplicationSource,
++    val reaction: ElementReaction
++) : EntityEvent(what), Cancellable {
++
++    private var cancelled = false
++
++    override fun getHandlers(): HandlerList {
++        return HANDLER_LIST
++    }
++
++    override fun isCancelled(): Boolean {
++        return this.cancelled
++    }
++
++    override fun setCancelled(cancel: Boolean) {
++        this.cancelled = cancel
++    }
++
++    companion object {
++
++        private val HANDLER_LIST = HandlerList()
++
++        @JvmStatic
++        fun getHandlerList(): HandlerList {
++            return HANDLER_LIST
++        }
++
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/event/ElementRemovalEvent.kt b/src/main/kotlin/net/deechael/elements/event/ElementRemovalEvent.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..343d4e2eb5d0e90bcc10c52fa164cf1309856069
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/event/ElementRemovalEvent.kt
+@@ -0,0 +1,30 @@
++package net.deechael.elements.event
++
++import net.deechael.elements.api.ElementType
++import net.deechael.elements.api.ElementTypeRemovalReason
++import org.bukkit.entity.Entity
++import org.bukkit.event.HandlerList
++import org.bukkit.event.entity.EntityEvent
++
++class ElementRemovalEvent(
++    what: Entity,
++    val reason: ElementTypeRemovalReason,
++    val elementType: ElementType
++) : EntityEvent(what) {
++
++    override fun getHandlers(): HandlerList {
++        return HANDLER_LIST
++    }
++
++    companion object {
++
++        private val HANDLER_LIST = HandlerList()
++
++        @JvmStatic
++        fun getHandlerList(): HandlerList {
++            return HANDLER_LIST
++        }
++
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/elements/event/ElementalDamageEvent.kt b/src/main/kotlin/net/deechael/elements/event/ElementalDamageEvent.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..db50b7b25265e15f5f9ac71fa6b4a6ec3e2039b2
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/elements/event/ElementalDamageEvent.kt
+@@ -0,0 +1,29 @@
++package net.deechael.elements.event
++
++import net.deechael.elements.api.application.source.ApplicationSource
++import org.bukkit.entity.Entity
++import org.bukkit.event.HandlerList
++import org.bukkit.event.entity.EntityEvent
++
++class ElementalDamageEvent(
++    what: Entity,
++    val source: ApplicationSource,
++    var damage: Double
++) : EntityEvent(what) {
++
++    override fun getHandlers(): HandlerList {
++        return HANDLER_LIST
++    }
++
++    companion object {
++
++        private val HANDLER_LIST = HandlerList()
++
++        @JvmStatic
++        fun getHandlerList(): HandlerList {
++            return HANDLER_LIST
++        }
++
++    }
++
++}
+\ No newline at end of file

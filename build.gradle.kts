@@ -55,8 +55,8 @@ paperweight {
             apiPatchDir.set(layout.projectDirectory.dir("patches/api"))
             serverPatchDir.set(layout.projectDirectory.dir("patches/server"))
 
-            apiOutputDir.set(layout.projectDirectory.dir("pufferfish-api"))
-            serverOutputDir.set(layout.projectDirectory.dir("pufferfish-server"))
+            apiOutputDir.set(layout.projectDirectory.dir("artist-api"))
+            serverOutputDir.set(layout.projectDirectory.dir("artist-server"))
         }
     }
 }

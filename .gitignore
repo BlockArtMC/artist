@@ -1,0 +1,8 @@
+artist-api/
+artist-server/
+
+build/
+.gradle/
+
+.idea/
+

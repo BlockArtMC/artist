@@ -1,1 +1,2 @@
-
+minecraft net.minecraft.core.Registry
+minecraft net.minecraft.core.registries.Registries

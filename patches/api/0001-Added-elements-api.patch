@@ -74,7 +74,7 @@ index 8d8fe04e6b09d2a5b1cc05002073df5c58cdcb96..8a22f65498f51507ea09b522a17e3600
  }
 diff --git a/src/main/kotlin/net/deechael/elements/api/ElementGauge.kt b/src/main/kotlin/net/deechael/elements/api/ElementGauge.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..a65adc2837c341b54a7fa5d1b80fb53c94a4b4a5
+index 0000000000000000000000000000000000000000..2a0e2f1ba6b19a33378cd073c1f6cbdf0c002ef4
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/ElementGauge.kt
 @@ -0,0 +1,19 @@
@@ -99,7 +99,7 @@ index 0000000000000000000000000000000000000000..a65adc2837c341b54a7fa5d1b80fb53c
 +}
 diff --git a/src/main/kotlin/net/deechael/elements/api/ElementManager.kt b/src/main/kotlin/net/deechael/elements/api/ElementManager.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..3f33eb42f9fe960c61d4654ba7c9896c30d1cc1f
+index 0000000000000000000000000000000000000000..b9f542d92b15b568218f15d814087e3f99917e2c
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/ElementManager.kt
 @@ -0,0 +1,51 @@
@@ -157,7 +157,7 @@ index 0000000000000000000000000000000000000000..3f33eb42f9fe960c61d4654ba7c9896c
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/ElementSourceType.kt b/src/main/kotlin/net/deechael/elements/api/ElementSourceType.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..38c5699c6fc4deda0288bf738aaab32bb7749517
+index 0000000000000000000000000000000000000000..c78a88746b7c173bc909861eb152c8d9c89bcc2a
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/ElementSourceType.kt
 @@ -0,0 +1,7 @@
@@ -171,7 +171,7 @@ index 0000000000000000000000000000000000000000..38c5699c6fc4deda0288bf738aaab32b
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/ElementType.kt b/src/main/kotlin/net/deechael/elements/api/ElementType.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..3acdf43273bb8437b068a91a6e4ced963a3ffd5c
+index 0000000000000000000000000000000000000000..c7901bc0cce1db90c7caa129f87906b12603a5e7
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/ElementType.kt
 @@ -0,0 +1,21 @@
@@ -199,7 +199,7 @@ index 0000000000000000000000000000000000000000..3acdf43273bb8437b068a91a6e4ced96
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/ElementTypeRemovalReason.kt b/src/main/kotlin/net/deechael/elements/api/ElementTypeRemovalReason.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..b6155c5cd88f374979eabb9c510909361f7db8ad
+index 0000000000000000000000000000000000000000..ca12e2d5e388603594391c1ff932e0cb96b68731
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/ElementTypeRemovalReason.kt
 @@ -0,0 +1,7 @@
@@ -213,7 +213,7 @@ index 0000000000000000000000000000000000000000..b6155c5cd88f374979eabb9c51090936
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/application/ApplicationTrigger.kt b/src/main/kotlin/net/deechael/elements/api/application/ApplicationTrigger.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..fa731cadc91210d1886b610cf1d66623758d525c
+index 0000000000000000000000000000000000000000..96a754b025e5316e57d612554d3a313437f5ea69
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/application/ApplicationTrigger.kt
 @@ -0,0 +1,18 @@
@@ -238,7 +238,7 @@ index 0000000000000000000000000000000000000000..fa731cadc91210d1886b610cf1d66623
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/application/ElementApplication.kt b/src/main/kotlin/net/deechael/elements/api/application/ElementApplication.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..61b5f0af059b5e4e2990bf0135493022c873fb52
+index 0000000000000000000000000000000000000000..db0bf2a394093adcf627df601a74a820b599be81
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/application/ElementApplication.kt
 @@ -0,0 +1,19 @@
@@ -264,7 +264,7 @@ index 0000000000000000000000000000000000000000..61b5f0af059b5e4e2990bf0135493022
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/application/ElementApplicationManager.kt b/src/main/kotlin/net/deechael/elements/api/application/ElementApplicationManager.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..c538fb753ef5d989e3d791842902c6d74e2022b6
+index 0000000000000000000000000000000000000000..a309c629f6d07942774e7c9a40f757e41016dc00
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/application/ElementApplicationManager.kt
 @@ -0,0 +1,14 @@
@@ -285,7 +285,7 @@ index 0000000000000000000000000000000000000000..c538fb753ef5d989e3d791842902c6d7
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/application/source/ApplicationSource.kt b/src/main/kotlin/net/deechael/elements/api/application/source/ApplicationSource.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..cce0ea516642ac9b162f09b8923ad244f0c4dc0a
+index 0000000000000000000000000000000000000000..a86eee79f6b67903c8824a788ac1e1e47a61da39
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/application/source/ApplicationSource.kt
 @@ -0,0 +1,15 @@
@@ -307,7 +307,7 @@ index 0000000000000000000000000000000000000000..cce0ea516642ac9b162f09b8923ad244
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/application/source/EntitySource.kt b/src/main/kotlin/net/deechael/elements/api/application/source/EntitySource.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..04e0aeb2905e81d0806df556f117b3f976cfb712
+index 0000000000000000000000000000000000000000..56235f746ecf21b39cf85034b37ff8f84fa32659
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/application/source/EntitySource.kt
 @@ -0,0 +1,14 @@
@@ -328,7 +328,7 @@ index 0000000000000000000000000000000000000000..04e0aeb2905e81d0806df556f117b3f9
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/application/source/EnvironmentSource.kt b/src/main/kotlin/net/deechael/elements/api/application/source/EnvironmentSource.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..5f166edaba0a9c25e14a0e1aa248e466ad146164
+index 0000000000000000000000000000000000000000..df56d2af101cbb222333bffc218a94614a1bf2fa
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/application/source/EnvironmentSource.kt
 @@ -0,0 +1,14 @@
@@ -349,7 +349,7 @@ index 0000000000000000000000000000000000000000..5f166edaba0a9c25e14a0e1aa248e466
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/application/source/PluginSource.kt b/src/main/kotlin/net/deechael/elements/api/application/source/PluginSource.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..c85c1147337e8f4f43191e523bb74b6f3f843ed3
+index 0000000000000000000000000000000000000000..d2b5e72fa467533384224d78907f445644a30b8d
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/application/source/PluginSource.kt
 @@ -0,0 +1,14 @@
@@ -370,7 +370,7 @@ index 0000000000000000000000000000000000000000..c85c1147337e8f4f43191e523bb74b6f
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/application/source/ReactionSource.kt b/src/main/kotlin/net/deechael/elements/api/application/source/ReactionSource.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..8b894f86678f1208eaa1144f79aa1ceeeffb59fe
+index 0000000000000000000000000000000000000000..5e0a92e15a2a6d50834048709276c1bae54b2d08
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/application/source/ReactionSource.kt
 @@ -0,0 +1,14 @@
@@ -391,7 +391,7 @@ index 0000000000000000000000000000000000000000..8b894f86678f1208eaa1144f79aa1cee
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/application/source/SourceManager.kt b/src/main/kotlin/net/deechael/elements/api/application/source/SourceManager.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..f3edce09c56cca9a52439847885c816363c48c86
+index 0000000000000000000000000000000000000000..a12534301abc87171a7982cd530a9b5555866fe1
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/application/source/SourceManager.kt
 @@ -0,0 +1,36 @@
@@ -434,7 +434,7 @@ index 0000000000000000000000000000000000000000..f3edce09c56cca9a52439847885c8163
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/mute/ElementMuteManager.kt b/src/main/kotlin/net/deechael/elements/api/mute/ElementMuteManager.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..66f845455159e9d0acad069930fb10e234b140c9
+index 0000000000000000000000000000000000000000..e45a24a749bec9cf42d5190b97a8fb419dd6fc2e
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/mute/ElementMuteManager.kt
 @@ -0,0 +1,16 @@
@@ -457,7 +457,7 @@ index 0000000000000000000000000000000000000000..66f845455159e9d0acad069930fb10e2
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/reaction/ElementReaction.kt b/src/main/kotlin/net/deechael/elements/api/reaction/ElementReaction.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..b912e3b035bfc8deed881b5376be649c1fc88147
+index 0000000000000000000000000000000000000000..5bed76266f4571c074285e5975b26148303cd9e0
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/reaction/ElementReaction.kt
 @@ -0,0 +1,18 @@
@@ -482,7 +482,7 @@ index 0000000000000000000000000000000000000000..b912e3b035bfc8deed881b5376be649c
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/api/reaction/ElementReactionTrigger.kt b/src/main/kotlin/net/deechael/elements/api/reaction/ElementReactionTrigger.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..7d1a6b4e0d3291da025400f8ca18bf3ac438f5f5
+index 0000000000000000000000000000000000000000..af10838c4e21429422133d792e6745215c5f84fc
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/api/reaction/ElementReactionTrigger.kt
 @@ -0,0 +1,28 @@
@@ -517,7 +517,7 @@ index 0000000000000000000000000000000000000000..7d1a6b4e0d3291da025400f8ca18bf3a
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/event/ElementAppliedEvent.kt b/src/main/kotlin/net/deechael/elements/event/ElementAppliedEvent.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..1918175ecfe72e52b481349afbfb3d24b692b600
+index 0000000000000000000000000000000000000000..9d624746113d5114047a1eb2ab0aa67686e2151b
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/event/ElementAppliedEvent.kt
 @@ -0,0 +1,39 @@
@@ -563,7 +563,7 @@ index 0000000000000000000000000000000000000000..1918175ecfe72e52b481349afbfb3d24
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/event/ElementReactedEvent.kt b/src/main/kotlin/net/deechael/elements/event/ElementReactedEvent.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..46e42afb870a2700ddf2d989f3d9a91a824886ee
+index 0000000000000000000000000000000000000000..d99255e5bcfaea8027db0be29d8ddf9521008f5a
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/event/ElementReactedEvent.kt
 @@ -0,0 +1,41 @@
@@ -611,7 +611,7 @@ index 0000000000000000000000000000000000000000..46e42afb870a2700ddf2d989f3d9a91a
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/event/ElementRemovalEvent.kt b/src/main/kotlin/net/deechael/elements/event/ElementRemovalEvent.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..343d4e2eb5d0e90bcc10c52fa164cf1309856069
+index 0000000000000000000000000000000000000000..db0d80c2f2c4ce8bd8d4ef2564f043a423b7b225
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/event/ElementRemovalEvent.kt
 @@ -0,0 +1,30 @@
@@ -648,7 +648,7 @@ index 0000000000000000000000000000000000000000..343d4e2eb5d0e90bcc10c52fa164cf13
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/elements/event/ElementalDamageEvent.kt b/src/main/kotlin/net/deechael/elements/event/ElementalDamageEvent.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..db50b7b25265e15f5f9ac71fa6b4a6ec3e2039b2
+index 0000000000000000000000000000000000000000..fd3fce266e4c6fe2a58471193ddcb954f6e42d0b
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/elements/event/ElementalDamageEvent.kt
 @@ -0,0 +1,29 @@

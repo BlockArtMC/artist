@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Tue, 29 Aug 2023 00:18:22 +0800
+Subject: [PATCH] show applied elements on entity head
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+index 2a5736860b3c62fdcd65140f461145295fe67e0c..1ffbfea8aed80c0aed5524f2db1aa046925a236b 100644
+--- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
++++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+@@ -20,6 +20,7 @@ import java.util.UUID;
+ import java.util.function.Predicate;
+ import javax.annotation.Nullable;
+ 
++import io.papermc.paper.adventure.PaperAdventure;
+ import net.deechael.artist.element.ArtistElementApplication;
+ import net.deechael.artist.element.ArtistElementType;
+ import net.deechael.artist.element.source.ArtistEnvironmentSource;
+@@ -27,6 +28,8 @@ import net.deechael.elements.api.ElementGauge;
+ import net.deechael.elements.api.ElementType;
+ import net.deechael.elements.api.application.source.ApplicationSource;
+ import net.deechael.elements.api.application.source.EntitySource;
++import net.kyori.adventure.text.Component;
++import net.kyori.adventure.text.format.TextColor;
+ import net.minecraft.BlockUtil;
+ import net.minecraft.advancements.CriteriaTriggers;
+ import net.minecraft.commands.arguments.EntityAnchorArgument;
+@@ -131,6 +134,7 @@ import net.minecraft.world.scores.PlayerTeam;
+ import org.bukkit.craftbukkit.entity.CraftHumanEntity;
+ import org.bukkit.craftbukkit.entity.CraftLivingEntity;
+ import org.bukkit.entity.HumanEntity;
++import org.bukkit.entity.TextDisplay;
+ import org.slf4j.Logger;
+ 
+ // CraftBukkit start
+@@ -275,6 +279,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+     public boolean silentDeath = false; // Paper - mark entity as dying silently for cancellable death event
+     public net.kyori.adventure.util.TriState frictionState = net.kyori.adventure.util.TriState.NOT_SET; // Paper
+     private ArtistElementApplication elementApplication = new ArtistElementApplication(this);
++    private Display.TextDisplay namePlate;
+ 
+     @Override
+     public float getBukkitYaw() {
+@@ -313,6 +318,9 @@ public abstract class LivingEntity extends Entity implements Attackable {
+         NbtOps dynamicopsnbt = NbtOps.INSTANCE;
+ 
+         this.brain = this.makeBrain(new Dynamic(dynamicopsnbt, (Tag) dynamicopsnbt.createMap((Map) ImmutableMap.of(dynamicopsnbt.createString("memories"), (Tag) dynamicopsnbt.emptyMap()))));
++
++        this.namePlate = (Display.TextDisplay) this.level().getWorld().createEntity(this.getBukkitEntity().getLocation(), TextDisplay.class);
++        this.namePlate.setCustomNameVisible(true);
+     }
+ 
+     public Brain<?> getBrain() {
+@@ -3116,6 +3124,22 @@ public abstract class LivingEntity extends Entity implements Attackable {
+                     )
+             );
+         }
++        Vec3 pos = this.position();
++        this.namePlate.setPos(pos.x, pos.y + ((double) this.getEyeHeight()) + 0.3, pos.z);
++        List<Component> elementTags = new ArrayList<>();
++        List<ElementType> appliedElementTypes = this.elementApplication.getAppliedElementTypes();
++        for (int i = 0; i < appliedElementTypes.size(); i++) {
++            ElementType elementType = appliedElementTypes.get(i);
++            elementTags.add(elementType.getIcon().color(TextColor.color(elementType.getColor().getRGB())));
++            if (i < (appliedElementTypes.size() - 1)) {
++                elementTags.add(Component.space());
++            }
++        }
++        Component finalComponent = Component.empty();
++        for (Component component : elementTags) {
++            finalComponent.append(component);
++        }
++        this.namePlate.setText(PaperAdventure.asVanilla(finalComponent));
+     }
+ 
+     @Override

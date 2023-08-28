@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Mon, 28 Aug 2023 23:57:15 +0800
+Subject: [PATCH] elements application
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+index d934cfc2552e2e21af9d6516a67f5bb63f0275ba..2a5736860b3c62fdcd65140f461145295fe67e0c 100644
+--- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
++++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+@@ -21,6 +21,10 @@ import java.util.function.Predicate;
+ import javax.annotation.Nullable;
+ 
+ import net.deechael.artist.element.ArtistElementApplication;
++import net.deechael.artist.element.ArtistElementType;
++import net.deechael.artist.element.source.ArtistEnvironmentSource;
++import net.deechael.elements.api.ElementGauge;
++import net.deechael.elements.api.ElementType;
+ import net.deechael.elements.api.application.source.ApplicationSource;
+ import net.deechael.elements.api.application.source.EntitySource;
+ import net.minecraft.BlockUtil;
+@@ -3085,6 +3089,45 @@ public abstract class LivingEntity extends Entity implements Attackable {
+             this.setXRot(0.0F);
+         }
+         this.elementApplication.tick();
++        if (this.isInWaterRainOrBubble()) {
++            this.elementApplication.applyElement(
++                    new ArtistEnvironmentSource(
++                            this.getBukkitLivingEntity().getLocation(),
++                            ArtistElementType.HYDRO,
++                            new ElementGauge(1, 0)
++                    )
++            );
++        }
++        if (this.isOnFire() || this.isInLava()) {
++            this.elementApplication.applyElement(
++                    new ArtistEnvironmentSource(
++                            this.getBukkitLivingEntity().getLocation(),
++                            ArtistElementType.PYRO,
++                            new ElementGauge(1, 0)
++                    )
++            );
++        }
++        if (this.isInPowderSnow) {
++            this.elementApplication.applyElement(
++                    new ArtistEnvironmentSource(
++                            this.getBukkitLivingEntity().getLocation(),
++                            ArtistElementType.CRYO,
++                            new ElementGauge(1, 0)
++                    )
++            );
++        }
++    }
++
++    @Override
++    public void thunderHit(ServerLevel world, LightningBolt lightning) {
++        super.thunderHit(world, lightning);
++        this.elementApplication.applyElement(
++                new ArtistEnvironmentSource(
++                        this.getBukkitLivingEntity().getLocation(),
++                        ArtistElementType.ELECTRO,
++                        new ElementGauge(1, 0)
++                )
++        );
+     }
+ 
+     public void detectEquipmentUpdates() {

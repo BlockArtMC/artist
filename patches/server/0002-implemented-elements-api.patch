@@ -1,0 +1,1738 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Mon, 28 Aug 2023 23:29:11 +0800
+Subject: [PATCH] implemented elements api
+
+
+diff --git a/build.gradle.kts b/build.gradle.kts
+index 142fcb4b0dcafac62867be881928a1423abd3d9c..9e7c8f897a2b7034e1a46c31d2c54f568781e333 100644
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -4,6 +4,7 @@ plugins {
+     java
+     `maven-publish`
+     id("com.github.johnrengelman.shadow")
++    kotlin("jvm") version "1.9.0"
+ }
+ 
+ val log4jPlugins = sourceSets.create("log4jPlugins")
+diff --git a/src/main/java/net/minecraft/core/Registry.java b/src/main/java/net/minecraft/core/Registry.java
+index 20f42836beeee802fb9cfd60f6e1a56cf548bfc7..43044f03b85bcc0246e91365ce920052cc194c3c 100644
+--- a/src/main/java/net/minecraft/core/Registry.java
++++ b/src/main/java/net/minecraft/core/Registry.java
+@@ -169,7 +169,7 @@ public interface Registry<T> extends Keyable, IdMap<T> {
+     Optional<HolderSet.Named<T>> getTag(TagKey<T> tag);
+ 
+     default Iterable<Holder<T>> getTagOrEmpty(TagKey<T> tag) {
+-        return DataFixUtils.orElse(this.getTag(tag), List.<T>of());
++        return (Iterable<Holder<T>>) DataFixUtils.orElse(this.getTag(tag), List.<T>of());
+     }
+ 
+     HolderSet.Named<T> getOrCreateTag(TagKey<T> tag);
+@@ -192,7 +192,7 @@ public interface Registry<T> extends Keyable, IdMap<T> {
+             @Nullable
+             @Override
+             public Holder<T> byId(int i) {
+-                return (Holder)Registry.this.getHolder(i).orElse((T)null);
++                return Registry.this.getHolder(i).orElse(null);
+             }
+ 
+             @Override
+@@ -202,9 +202,7 @@ public interface Registry<T> extends Keyable, IdMap<T> {
+ 
+             @Override
+             public Iterator<Holder<T>> iterator() {
+-                return Registry.this.holders().map((entry) -> {
+-                    return entry;
+-                }).iterator();
++                return Registry.this.holders().map((entry) -> (Holder<T>) entry).iterator();
+             }
+         };
+     }
+diff --git a/src/main/java/net/minecraft/core/registries/BuiltInRegistries.java b/src/main/java/net/minecraft/core/registries/BuiltInRegistries.java
+index 7d09adf27da249851cfc87b7916b915240a65a7e..498b0a9069fc210a0547ee30f904270526d2479c 100644
+--- a/src/main/java/net/minecraft/core/registries/BuiltInRegistries.java
++++ b/src/main/java/net/minecraft/core/registries/BuiltInRegistries.java
+@@ -6,6 +6,11 @@ import com.mojang.serialization.Codec;
+ import com.mojang.serialization.Lifecycle;
+ import java.util.Map;
+ import java.util.function.Supplier;
++
++import net.deechael.artist.element.ArtistElementReaction;
++import net.deechael.artist.element.ArtistElementType;
++import net.deechael.elements.api.ElementType;
++import net.deechael.elements.api.reaction.ElementReaction;
+ import net.minecraft.Util;
+ import net.minecraft.commands.synchronization.ArgumentTypeInfo;
+ import net.minecraft.commands.synchronization.ArgumentTypeInfos;
+@@ -283,6 +288,12 @@ public class BuiltInRegistries {
+     public static final Registry<Instrument> INSTRUMENT = registerSimple(Registries.INSTRUMENT, Instruments::bootstrap);
+     public static final Registry<String> DECORATED_POT_PATTERNS = registerSimple(Registries.DECORATED_POT_PATTERNS, DecoratedPotPatterns::bootstrap);
+     public static final Registry<CreativeModeTab> CREATIVE_MODE_TAB = registerSimple(Registries.CREATIVE_MODE_TAB, CreativeModeTabs::bootstrap);
++    public static final Registry<ElementType> ELEMENT_TYPE = registerSimple(Registries.ELEMENT_TYPE, (registry) -> {
++        return ArtistElementType.PYRO;
++    });
++    public static final Registry<ElementReaction> ELEMENT_REACTION = registerSimple(Registries.ELEMENT_REACTION, (registry) -> {
++        return ArtistElementReaction.VAPORIZE;
++    });
+     public static final Registry<? extends Registry<?>> REGISTRY = WRITABLE_REGISTRY;
+ 
+     private static <T> Registry<T> registerSimple(ResourceKey<? extends Registry<T>> key, BuiltInRegistries.RegistryBootstrap<T> initializer) {
+diff --git a/src/main/java/net/minecraft/core/registries/Registries.java b/src/main/java/net/minecraft/core/registries/Registries.java
+index 933ec26a5de254838c3e4d5f8e50ec0b5731e261..effd7e22e416ad3fe711e7890ba07763d316505e 100644
+--- a/src/main/java/net/minecraft/core/registries/Registries.java
++++ b/src/main/java/net/minecraft/core/registries/Registries.java
+@@ -1,6 +1,8 @@
+ package net.minecraft.core.registries;
+ 
+ import com.mojang.serialization.Codec;
++import net.deechael.elements.api.ElementType;
++import net.deechael.elements.api.reaction.ElementReaction;
+ import net.minecraft.commands.synchronization.ArgumentTypeInfo;
+ import net.minecraft.core.Registry;
+ import net.minecraft.core.particles.ParticleType;
+@@ -176,6 +178,8 @@ public class Registries {
+     public static final ResourceKey<Registry<MultiNoiseBiomeSourceParameterList>> MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST = createRegistryKey("worldgen/multi_noise_biome_source_parameter_list");
+     public static final ResourceKey<Registry<Level>> DIMENSION = createRegistryKey("dimension");
+     public static final ResourceKey<Registry<LevelStem>> LEVEL_STEM = createRegistryKey("dimension");
++    public static final ResourceKey<Registry<ElementType>> ELEMENT_TYPE = createRegistryKey("element_type");
++    public static final ResourceKey<Registry<ElementReaction>> ELEMENT_REACTION = createRegistryKey("element_reaction");
+ 
+     public static ResourceKey<Level> levelStemToLevel(ResourceKey<LevelStem> key) {
+         return ResourceKey.create(DIMENSION, key.location());
+diff --git a/src/main/java/net/minecraft/world/entity/EntityType.java b/src/main/java/net/minecraft/world/entity/EntityType.java
+index 9afc81ccb237c3655d64cdbe8a0db9a4d7791043..a0e9fe6fbaf7b22003a6ed79af1049b99000a9eb 100644
+--- a/src/main/java/net/minecraft/world/entity/EntityType.java
++++ b/src/main/java/net/minecraft/world/entity/EntityType.java
+@@ -11,6 +11,8 @@ import java.util.function.Function;
+ import java.util.stream.Stream;
+ import java.util.stream.StreamSupport;
+ import javax.annotation.Nullable;
++
++import net.deechael.elements.api.ElementType;
+ import net.minecraft.Util;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.core.Direction;
+@@ -157,7 +159,6 @@ import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
+ import net.minecraft.world.phys.AABB;
+ import net.minecraft.world.phys.shapes.Shapes;
+ import net.minecraft.world.phys.shapes.VoxelShape;
+-import org.bukkit.event.entity.CreatureSpawnEvent;
+ import org.slf4j.Logger;
+ 
+ public class EntityType<T extends Entity> implements FeatureElement, EntityTypeTest<Entity, T> {
+@@ -308,6 +309,7 @@ public class EntityType<T extends Entity> implements FeatureElement, EntityTypeT
+     private ResourceLocation lootTable;
+     private final EntityDimensions dimensions;
+     private final FeatureFlagSet requiredFeatures;
++    private final ImmutableSet<ElementType> immuneElementTypes;
+ 
+     private static <T extends Entity> EntityType<T> register(String id, EntityType.Builder type) { // CraftBukkit - decompile error
+         return (EntityType) Registry.register(BuiltInRegistries.ENTITY_TYPE, id, (EntityType<T>) type.build(id)); // CraftBukkit - decompile error
+@@ -322,10 +324,13 @@ public class EntityType<T extends Entity> implements FeatureElement, EntityTypeT
+     }
+ 
+     public EntityType(EntityType.EntityFactory<T> factory, MobCategory spawnGroup, boolean saveable, boolean summonable, boolean fireImmune, boolean spawnableFarFromPlayer, ImmutableSet<Block> canSpawnInside, EntityDimensions dimensions, int maxTrackDistance, int trackTickInterval, FeatureFlagSet requiredFeatures) {
++        this(factory, spawnGroup, saveable, summonable, fireImmune, spawnableFarFromPlayer, canSpawnInside, dimensions, maxTrackDistance, trackTickInterval, requiredFeatures, ImmutableSet.of());
++    }
++    public EntityType(EntityType.EntityFactory<T> factory, MobCategory spawnGroup, boolean saveable, boolean summonable, boolean fireImmune, boolean spawnableFarFromPlayer, ImmutableSet<Block> canSpawnInside, EntityDimensions dimensions, int maxTrackDistance, int trackTickInterval, FeatureFlagSet requiredFeatures, ImmutableSet<ElementType> immuneElementTypes) {
+        // Paper start
+-        this(factory, spawnGroup, saveable, summonable, fireImmune, spawnableFarFromPlayer, canSpawnInside, dimensions, maxTrackDistance, trackTickInterval, requiredFeatures, "custom");
++        this(factory, spawnGroup, saveable, summonable, fireImmune, spawnableFarFromPlayer, canSpawnInside, dimensions, maxTrackDistance, trackTickInterval, requiredFeatures, immuneElementTypes, "custom");
+     }
+-    public EntityType(EntityType.EntityFactory<T> factory, MobCategory spawnGroup, boolean saveable, boolean summonable, boolean fireImmune, boolean spawnableFarFromPlayer, ImmutableSet<Block> canSpawnInside, EntityDimensions dimensions, int maxTrackDistance, int trackTickInterval, FeatureFlagSet requiredFeatures, String id) {
++    public EntityType(EntityFactory<T> factory, MobCategory spawnGroup, boolean saveable, boolean summonable, boolean fireImmune, boolean spawnableFarFromPlayer, ImmutableSet<Block> canSpawnInside, EntityDimensions dimensions, int maxTrackDistance, int trackTickInterval, FeatureFlagSet requiredFeatures, ImmutableSet<ElementType> immuneElementTypes, String id) {
+         this.tickTimer = co.aikar.timings.MinecraftTimings.getEntityTimings(id, "tick");
+         this.inactiveTickTimer = co.aikar.timings.MinecraftTimings.getEntityTimings(id, "inactiveTick");
+         this.passengerTickTimer = co.aikar.timings.MinecraftTimings.getEntityTimings(id, "passengerTick");
+@@ -343,6 +348,7 @@ public class EntityType<T extends Entity> implements FeatureElement, EntityTypeT
+         this.clientTrackingRange = maxTrackDistance;
+         this.updateInterval = trackTickInterval;
+         this.requiredFeatures = requiredFeatures;
++        this.immuneElementTypes = immuneElementTypes;
+     }
+ 
+     @Nullable
+@@ -714,6 +720,10 @@ public class EntityType<T extends Entity> implements FeatureElement, EntityTypeT
+         return this.builtInRegistryHolder;
+     }
+ 
++    public boolean isElementImmune(ElementType elementType) {
++        return this.immuneElementTypes.contains(elementType);
++    }
++
+     public static class Builder<T extends Entity> {
+ 
+         private final EntityType.EntityFactory<T> factory;
+@@ -727,6 +737,7 @@ public class EntityType<T extends Entity> implements FeatureElement, EntityTypeT
+         private int updateInterval = 3;
+         private EntityDimensions dimensions = EntityDimensions.scalable(0.6F, 1.8F);
+         private FeatureFlagSet requiredFeatures;
++        private ImmutableSet<ElementType> immuneElementTypes = ImmutableSet.of();
+ 
+         private Builder(EntityType.EntityFactory<T> factory, MobCategory spawnGroup) {
+             this.requiredFeatures = FeatureFlags.VANILLA_SET;
+@@ -790,12 +801,17 @@ public class EntityType<T extends Entity> implements FeatureElement, EntityTypeT
+             return this;
+         }
+ 
++        public EntityType.Builder<T> immuneElementTypes(ElementType... elementTypes) {
++            this.immuneElementTypes = ImmutableSet.copyOf(elementTypes);
++            return this;
++        }
++
+         public EntityType<T> build(String id) {
+             if (this.serialize) {
+                 Util.fetchChoiceType(References.ENTITY_TREE, id);
+             }
+ 
+-            return new EntityType<>(this.factory, this.category, this.serialize, this.summon, this.fireImmune, this.canSpawnFarFromPlayer, this.immuneTo, this.dimensions, this.clientTrackingRange, this.updateInterval, this.requiredFeatures, id); // Paper - add id
++            return new EntityType<>(this.factory, this.category, this.serialize, this.summon, this.fireImmune, this.canSpawnFarFromPlayer, this.immuneTo, this.dimensions, this.clientTrackingRange, this.updateInterval, this.requiredFeatures, this.immuneElementTypes, id); // Paper - add id
+         }
+     }
+ 
+diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+index e11d7283662834047b2ff81a2fd25a4263792deb..d934cfc2552e2e21af9d6516a67f5bb63f0275ba 100644
+--- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
++++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+@@ -19,6 +19,10 @@ import java.util.Optional;
+ import java.util.UUID;
+ import java.util.function.Predicate;
+ import javax.annotation.Nullable;
++
++import net.deechael.artist.element.ArtistElementApplication;
++import net.deechael.elements.api.application.source.ApplicationSource;
++import net.deechael.elements.api.application.source.EntitySource;
+ import net.minecraft.BlockUtil;
+ import net.minecraft.advancements.CriteriaTriggers;
+ import net.minecraft.commands.arguments.EntityAnchorArgument;
+@@ -120,6 +124,9 @@ import net.minecraft.world.phys.EntityHitResult;
+ import net.minecraft.world.phys.HitResult;
+ import net.minecraft.world.phys.Vec3;
+ import net.minecraft.world.scores.PlayerTeam;
++import org.bukkit.craftbukkit.entity.CraftHumanEntity;
++import org.bukkit.craftbukkit.entity.CraftLivingEntity;
++import org.bukkit.entity.HumanEntity;
+ import org.slf4j.Logger;
+ 
+ // CraftBukkit start
+@@ -263,6 +270,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+     public org.bukkit.craftbukkit.entity.CraftLivingEntity getBukkitLivingEntity() { return (org.bukkit.craftbukkit.entity.CraftLivingEntity) super.getBukkitEntity(); } // Paper
+     public boolean silentDeath = false; // Paper - mark entity as dying silently for cancellable death event
+     public net.kyori.adventure.util.TriState frictionState = net.kyori.adventure.util.TriState.NOT_SET; // Paper
++    private ArtistElementApplication elementApplication = new ArtistElementApplication(this);
+ 
+     @Override
+     public float getBukkitYaw() {
+@@ -1369,6 +1377,19 @@ public abstract class LivingEntity extends Entity implements Attackable {
+         return this.getHealth() <= 0.0F;
+     }
+ 
++    public boolean hurtElementally(ApplicationSource source, double amount) {
++        DamageSource reason = this.damageSources().generic();
++        if (source instanceof EntitySource entitySource) {
++            org.bukkit.entity.Entity entity = entitySource.getEntity();
++            if (entity instanceof HumanEntity) {
++                reason = this.damageSources().playerAttack(((CraftHumanEntity) source).getHandle());
++            } else if (entity instanceof org.bukkit.entity.LivingEntity) {
++                reason = this.damageSources().mobAttack(((CraftLivingEntity) source).getHandle());
++            }
++        }
++        return this.hurt(reason, (float) this.elementApplication.applyElementWithDamage(source, amount));
++    }
++
+     @Override
+     public boolean hurt(DamageSource source, float amount) {
+         if (this.isInvulnerableTo(source)) {
+@@ -3063,6 +3084,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+         if (this.isSleeping()) {
+             this.setXRot(0.0F);
+         }
++        this.elementApplication.tick();
+     }
+ 
+     public void detectEquipmentUpdates() {
+@@ -4447,6 +4469,10 @@ public abstract class LivingEntity extends Entity implements Attackable {
+         return this.getControllingPassenger() instanceof net.minecraft.world.entity.player.Player ? Math.max(f, 1.0F) : f;
+     }
+ 
++    public ArtistElementApplication getElementApplication() {
++        return this.elementApplication;
++    }
++
+     public static record Fallsounds(SoundEvent small, SoundEvent big) {
+ 
+     }
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 53e53a37740ea40aa30ef57b63d9f9ff5fb609a0..2b504326cba1513b37360af0e43639e6a126104f 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -44,6 +44,8 @@ import java.util.logging.Level;
+ import java.util.logging.Logger;
+ import java.util.stream.Collectors;
+ import javax.imageio.ImageIO;
++
++import net.deechael.artist.element.ArtistElementManager;
+ import net.minecraft.advancements.Advancement;
+ import net.minecraft.commands.CommandSourceStack;
+ import net.minecraft.commands.Commands;
+@@ -306,6 +308,8 @@ public final class CraftServer implements Server {
+     private final io.papermc.paper.logging.SysoutCatcher sysoutCatcher = new io.papermc.paper.logging.SysoutCatcher(); // Paper
+     private final CraftPotionBrewer potionBrewer = new CraftPotionBrewer(); // Paper
+ 
++    private final ArtistElementManager elementManager = new ArtistElementManager();
++
+     // Paper start - Folia region threading API
+     private final io.papermc.paper.threadedregions.scheduler.FallbackRegionScheduler regionizedScheduler = new io.papermc.paper.threadedregions.scheduler.FallbackRegionScheduler();
+     private final io.papermc.paper.threadedregions.scheduler.FoliaAsyncScheduler asyncScheduler = new io.papermc.paper.threadedregions.scheduler.FoliaAsyncScheduler();
+@@ -3145,4 +3149,10 @@ public final class CraftServer implements Server {
+     }
+ 
+     // Paper end
++
++    @Override
++    public ArtistElementManager getElementManager() {
++        return this.elementManager;
++    }
++
+ }
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
+index f0ce29d21fe9af803ce4e41b8c037b2ec5d1b124..3913acf2c1a74948547fde6391f59b9b384f2676 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
+@@ -9,6 +9,9 @@ import java.util.Iterator;
+ import java.util.List;
+ import java.util.Set;
+ import java.util.UUID;
++
++import net.deechael.elements.api.application.ElementApplication;
++import net.deechael.elements.api.application.source.ApplicationSource;
+ import net.minecraft.network.protocol.game.ClientboundHurtAnimationPacket;
+ import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.sounds.SoundEvent;
+@@ -1094,4 +1097,15 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+         getHandle().knockback(strength, directionX, directionZ);
+     };
+     // Paper end
++
++    @Override
++    public void elementalDamage(double amount, ApplicationSource source) {
++        this.getHandle().hurtElementally(source, amount);
++    }
++
++    @Override
++    public ElementApplication getElementApplication() {
++        return this.getHandle().getElementApplication();
++    }
++
+ }
+diff --git a/src/main/kotlin/net/deechael/artist/element/ArtistElementApplication.kt b/src/main/kotlin/net/deechael/artist/element/ArtistElementApplication.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..13452017604c3cad3c08fed22d07a385ae880fe6
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/element/ArtistElementApplication.kt
+@@ -0,0 +1,125 @@
++package net.deechael.artist.element
++
++import net.deechael.elements.api.ElementGauge
++import net.deechael.elements.api.ElementType
++import net.deechael.elements.api.ElementTypeRemovalReason
++import net.deechael.elements.api.application.ElementApplication
++import net.deechael.elements.api.application.source.ApplicationSource
++import net.deechael.elements.event.ElementAppliedEvent
++import net.deechael.elements.event.ElementReactedEvent
++import net.deechael.elements.event.ElementRemovalEvent
++import net.minecraft.world.entity.LivingEntity
++import org.bukkit.Bukkit
++
++class ArtistElementApplication(private val entity: LivingEntity) : ElementApplication {
++
++    private val appliedElements = mutableMapOf<ElementType, ElementGauge>()
++    private val expiredTime = mutableMapOf<ElementType, Long>()
++
++    override fun clear() {
++        this.appliedElements.clear()
++        this.expiredTime.clear()
++    }
++
++    override fun getAppliedElementTypes(): List<ElementType> {
++        return this.appliedElements.keys.toList()
++    }
++
++    override fun getGauge(elementType: ElementType): ElementGauge {
++        return this.appliedElements[elementType]!!
++    }
++
++    override fun applyElement(source: ApplicationSource) {
++        if (this.entity.type.isElementImmune(source.getElementType())) {
++            this.addElementType(source)
++            return
++        }
++        if (source.getElementGauge().toDouble() <= 0)
++            return
++        if (this.react(source) != null)
++            return
++        if (!source.getElementType().isApplicable())
++            return
++        val event = ElementAppliedEvent(
++            this.entity.bukkitLivingEntity,
++            source
++        )
++        Bukkit.getPluginManager().callEvent(event)
++        if (event.isCancelled)
++            return
++        this.addElementType(source)
++        source.getElementType().getTrigger().trigger(source, this.entity.bukkitLivingEntity)
++    }
++
++    override fun applyElementWithDamage(source: ApplicationSource, damage: Double): Double {
++        if (this.entity.type.isElementImmune(source.getElementType())) {
++            this.addElementType(source)
++            return 0.0
++        }
++        if (source.getElementGauge().toDouble() <= 0)
++            return damage
++        val newDamage = this.react(source)
++        if (newDamage != null)
++            return newDamage
++        if (!source.getElementType().isApplicable())
++            return damage
++        val event = ElementAppliedEvent(
++            this.entity.bukkitLivingEntity,
++            source
++        )
++        Bukkit.getPluginManager().callEvent(event)
++        if (event.isCancelled)
++            return 0.0
++        this.addElementType(source)
++        source.getElementType().getTrigger().trigger(source, this.entity.bukkitLivingEntity)
++        return damage
++    }
++
++    private fun react(source: ApplicationSource, damage: Double = 0.0): Double? {
++        if (source.getElementType().isReactable()) {
++            for (appliedElement in this.appliedElements.keys) {
++                for (reaction in Bukkit.getElementManager().getElementReactionsWithFormerType(appliedElement)) {
++                    if (reaction.getLatterElementTypes().contains(source.getElementType())) {
++                        val event = ElementReactedEvent(
++                            this.entity.bukkitLivingEntity,
++                            source,
++                            reaction
++                        )
++                        Bukkit.getPluginManager().callEvent(event)
++                        val gauge = this.appliedElements.remove(appliedElement)!!
++                        this.expiredTime.remove(appliedElement)
++                        reaction.getTrigger().trigger(reaction, source, entity.bukkitLivingEntity, gauge)
++                        return reaction.getTrigger().triggerDamage(reaction, source, entity.bukkitLivingEntity, gauge, damage)
++                    }
++                }
++            }
++        }
++        return null
++    }
++
++    private fun addElementType(source: ApplicationSource) {
++        this.appliedElements[source.getElementType()] = source.getElementGauge()
++        this.expiredTime[source.getElementType()] =
++            System.currentTimeMillis() + ((10.0 * source.getElementGauge().toDouble()).toLong() * 1000L)
++    }
++
++    private fun callExpired(type: ElementType) {
++        appliedElements.remove(type)
++        expiredTime.remove(type)
++        ElementRemovalEvent(
++            this.entity.bukkitLivingEntity,
++            ElementTypeRemovalReason.RUNNING_OUT,
++            type
++        )
++    }
++
++    fun tick() {
++        val current = System.currentTimeMillis()
++        for (elementType in this.getAppliedElementTypes()) {
++            if (this.expiredTime[elementType]!! <= current) {
++                callExpired(elementType)
++            }
++        }
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/element/ArtistElementManager.kt b/src/main/kotlin/net/deechael/artist/element/ArtistElementManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..253c38971ba0d6823ad10012f23f2c391b3b23d0
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/element/ArtistElementManager.kt
+@@ -0,0 +1,56 @@
++package net.deechael.artist.element
++
++import net.deechael.elements.api.ElementManager
++import net.deechael.elements.api.ElementType
++import net.deechael.elements.api.reaction.ElementReaction
++import net.minecraft.core.registries.BuiltInRegistries
++import net.minecraft.resources.ResourceLocation
++
++class ArtistElementManager : ElementManager {
++
++    override fun hasElementType(id: String): Boolean {
++        return BuiltInRegistries.ELEMENT_TYPE.containsKey(ResourceLocation(
++            "artist",
++            id.lowercase()
++        ))
++    }
++
++    override fun getElementType(id: String): ElementType {
++        if (!hasElementType(id))
++            throw NoSuchElementException("Element type not exists")
++        return BuiltInRegistries.ELEMENT_TYPE.get(ResourceLocation(
++            "artist",
++            id.lowercase()
++        ))!!
++    }
++
++    override fun getElementTypes(): List<ElementType> {
++        return BuiltInRegistries.ELEMENT_TYPE.stream().toList()
++    }
++
++    override fun hasElementReaction(id: String): Boolean {
++        return BuiltInRegistries.ELEMENT_REACTION.containsKey(ResourceLocation(
++            "artist",
++            id.lowercase()
++        ))
++    }
++
++    override fun getElementReaction(id: String): ElementReaction {
++        if (!hasElementReaction(id))
++            throw NoSuchElementException("Element reaction not exists")
++        return BuiltInRegistries.ELEMENT_REACTION.get(ResourceLocation(
++            "artist",
++            id.lowercase()
++        ))!!
++    }
++
++    override fun getElementReactions(): List<ElementReaction> {
++        return BuiltInRegistries.ELEMENT_REACTION.stream().toList()
++    }
++
++    override fun getElementReactionsWithFormerType(formerElementType: ElementType): List<ElementReaction> {
++        return this.getElementReactions().filter {
++            it.getFormerElementType().getId() == formerElementType.getId()
++        }.toList()
++    }
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/element/ArtistElementReaction.kt b/src/main/kotlin/net/deechael/artist/element/ArtistElementReaction.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..1f2d3f30b5b57fd673100cf52cf45baf1e26de48
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/element/ArtistElementReaction.kt
+@@ -0,0 +1,801 @@
++package net.deechael.artist.element
++
++import net.deechael.artist.element.source.ArtistReactionSource
++import net.deechael.elements.api.ElementGauge
++import net.deechael.elements.api.ElementType
++import net.deechael.elements.api.application.source.ApplicationSource
++import net.deechael.elements.api.application.source.EntitySource
++import net.deechael.elements.api.reaction.ElementReaction
++import net.deechael.elements.api.reaction.ElementReactionTrigger
++import net.minecraft.core.Registry
++import net.minecraft.core.registries.BuiltInRegistries
++import net.minecraft.resources.ResourceLocation
++import org.bukkit.Bukkit
++import org.bukkit.entity.Creeper
++import org.bukkit.entity.Entity
++import org.bukkit.entity.LivingEntity
++import org.bukkit.potion.PotionEffect
++import org.bukkit.potion.PotionEffectType
++import java.awt.Color
++
++class ArtistElementReaction(
++    private val id: String,
++    private val color: Color,
++    private val formerElementType: ElementType,
++    private val latterElementTypes: Array<ElementType>,
++    private val trigger: ElementReactionTrigger
++) : ElementReaction {
++
++    override fun getId(): String {
++        return this.id
++    }
++
++    override fun getColor(): Color {
++        return this.color
++    }
++
++    override fun getFormerElementType(): ElementType {
++        return this.formerElementType
++    }
++
++    override fun getLatterElementTypes(): Array<ElementType> {
++        return this.latterElementTypes
++    }
++
++    override fun getTrigger(): ElementReactionTrigger {
++        return this.trigger
++    }
++
++    companion object {
++
++        @JvmField
++        val VAPORIZE = register(
++            "vaporize",
++            ElementColors.Reactions.VAPORIZE,
++            ArtistElementType.PYRO,
++            arrayOf(ArtistElementType.HYDRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.fireTicks = 0
++                }
++
++                override fun triggerDamage(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge,
++                    originalDamage: Double
++                ): Double {
++                    return originalDamage * 2.0
++                }
++            }
++        )
++        @JvmField
++        val OVERLOADED = register(
++            "overloaded",
++            ElementColors.Reactions.OVERLOADED,
++            ArtistElementType.PYRO,
++            arrayOf(ArtistElementType.ELECTRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.location.world.createExplosion(sufferer.location, 2.0f)
++                }
++            }
++        )
++        @JvmField
++        val MELT = register(
++            "melt",
++            ElementColors.Reactions.MELT,
++            ArtistElementType.PYRO,
++            arrayOf(ArtistElementType.CRYO),
++            object : ElementReactionTrigger {
++                override fun triggerDamage(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge,
++                    originalDamage: Double
++                ): Double {
++                    return originalDamage * 1.5
++                }
++            }
++        )
++        @JvmField
++        val BURNING = register(
++            "burning",
++            ElementColors.Reactions.BURNING,
++            ArtistElementType.PYRO,
++            arrayOf(ArtistElementType.DENDRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.fireTicks = 10 * 20
++                }
++            }
++        )
++        @JvmField
++        val SWIRL_PYRO = register(
++            "swirl_pyro",
++            ElementColors.Reactions.SWIRL,
++            ArtistElementType.PYRO,
++            arrayOf(ArtistElementType.ANEMO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.getNearbyEntities(3.0, 3.0, 3.0)
++                        .filterIsInstance<LivingEntity>()
++                        .forEach {
++                            it.fireTicks = 3 * 20
++                            it.elementApplication.applyElement(
++                                ArtistReactionSource(
++                                    reaction,
++                                    ArtistElementType.PYRO,
++                                    formerElementTypeGauge.multiple(0.6)
++                                )
++                            )
++                        }
++                }
++            }
++        )
++        @JvmField
++        val VAPORIZE_REVERSE = register(
++            "vaporize_reverse",
++            ElementColors.Reactions.VAPORIZE,
++            ArtistElementType.HYDRO,
++            arrayOf(ArtistElementType.PYRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.fireTicks = 0
++                }
++
++                override fun triggerDamage(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge,
++                    originalDamage: Double
++                ): Double {
++                    return originalDamage * 1.5
++                }
++            }
++        )
++        @JvmField
++        val ELECTRO_CHARGED = register(
++            "electro_charged",
++            ElementColors.Reactions.ELECTRO_CHARGED,
++            ArtistElementType.HYDRO,
++            arrayOf(ArtistElementType.ELECTRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    if (!sufferer.isInWater)
++                        return
++                    val damage = PotionEffect(
++                        PotionEffectType.HARM,
++                        1,
++                        1
++                    )
++                    sufferer.getNearbyEntities(3.0, 3.0, 3.0)
++                        .filter(Entity::isInWater)
++                        .map { it as LivingEntity }
++                        .forEach {
++                            it.addPotionEffect(damage)
++                            if (it is Creeper)
++                                it.isPowered = true
++                        }
++                }
++            }
++        )
++        @JvmField
++        val FROZEN = register(
++            "frozen",
++            ElementColors.Reactions.FROZEN,
++            ArtistElementType.HYDRO,
++            arrayOf(ArtistElementType.CRYO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer as LivingEntity
++                    sufferer.addPotionEffects(
++                        listOf(
++                            PotionEffect(
++                                PotionEffectType.SLOW,
++                                5 * 20,
++                                255
++                            ),
++                            PotionEffect(
++                                PotionEffectType.SLOW_DIGGING,
++                                5 * 20,
++                                255
++                            ),
++                            PotionEffect(
++                                PotionEffectType.WEAKNESS,
++                                5 * 20,
++                                255
++                            ),
++                            PotionEffect(
++                                PotionEffectType.JUMP,
++                                5 * 20,
++                                128 // Over 127 will make player not able to jump
++                            )
++                        )
++                    )
++                }
++            }
++        )
++        @JvmField
++        val BLOOM = register(
++            "bloom",
++            ElementColors.Reactions.BLOOM,
++            ArtistElementType.HYDRO,
++            arrayOf(ArtistElementType.DENDRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.elementApplication.applyElement(
++                            ArtistReactionSource(
++                                reaction,
++                                ArtistElementType.REACTER_BLOOM,
++                                ElementGauge(1)
++                            )
++                        )
++                }
++            }
++        )
++        @JvmField
++        val SWIRL_HYDRO = register(
++            "swirl_hydro",
++            ElementColors.Reactions.SWIRL,
++            ArtistElementType.HYDRO,
++            arrayOf(ArtistElementType.ANEMO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.getNearbyEntities(3.0, 3.0, 3.0)
++                        .filterIsInstance<LivingEntity>()
++                        .forEach {
++                            it.elementApplication.applyElement(
++                                    ArtistReactionSource(
++                                        reaction,
++                                        ArtistElementType.HYDRO,
++                                        formerElementTypeGauge.multiple(0.6)
++                                    )
++                                )
++                        }
++                }
++            }
++        )
++        @JvmField
++        val OVERLOADED_REVERSE = register(
++            "overloaded_reverse",
++            ElementColors.Reactions.OVERLOADED,
++            ArtistElementType.ELECTRO,
++            arrayOf(ArtistElementType.PYRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.location.world.createExplosion(sufferer.location, 2.0f)
++                }
++            }
++        )
++        @JvmField
++        val ELECTRO_CHARGED_REVERSE = register(
++            "electro_charged_reverse",
++            ElementColors.Reactions.ELECTRO_CHARGED,
++            ArtistElementType.ELECTRO,
++            arrayOf(ArtistElementType.HYDRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    if (!sufferer.isInWater)
++                        return
++                    val damage = PotionEffect(
++                        PotionEffectType.HARM,
++                        1,
++                        1
++                    )
++                    sufferer.getNearbyEntities(3.0, 3.0, 3.0)
++                        .filter(Entity::isInWater)
++                        .map { it as LivingEntity }
++                        .forEach {
++                            it.addPotionEffect(damage)
++                            if (it is Creeper)
++                                it.isPowered = true
++                        }
++                }
++            }
++        )
++        @JvmField
++        val SUPER_CONDUCT = register(
++            "super_conduct",
++            ElementColors.Reactions.SUPER_CONDUCT,
++            ArtistElementType.ELECTRO,
++            arrayOf(ArtistElementType.CRYO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    val weak = PotionEffect(
++                        PotionEffectType.WEAKNESS,
++                        12 * 20,
++                        5
++                    )
++                    val source = ArtistReactionSource(
++                        reaction,
++                        ArtistElementType.CRYO,
++                        formerElementTypeGauge.multiple(0.6)
++                    )
++                    sufferer.getNearbyEntities(5.0, 5.0, 5.0)
++                        .let {
++                            return@let if (applicationSource !is EntitySource) it else it.filter { entity ->
++                                entity != applicationSource.getEntity()
++                            }
++                        }
++                        .filterIsInstance<LivingEntity>()
++                        .forEach {
++                            it.elementApplication.applyElement(source)
++                            it.addPotionEffect(weak)
++                        }
++                }
++            }
++        )
++        @JvmField
++        val QUICKEN = register(
++            "quicken",
++            ElementColors.Reactions.SUPER_CONDUCT,
++            ArtistElementType.ELECTRO,
++            arrayOf(ArtistElementType.DENDRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.elementApplication.applyElement(
++                            ArtistReactionSource(
++                                reaction,
++                                ArtistElementType.REACTER_QUICKEN,
++                                ElementGauge(1)
++                            )
++                        )
++                }
++            }
++        )
++        @JvmField
++        val SWIRL_ELECTRO = register(
++            "swirl_electro",
++            ElementColors.Reactions.SWIRL,
++            ArtistElementType.ELECTRO,
++            arrayOf(ArtistElementType.ANEMO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.getNearbyEntities(3.0, 3.0, 3.0)
++                        .filterIsInstance<LivingEntity>()
++                        .forEach {
++                            it.elementApplication.applyElement(
++                                ArtistReactionSource(
++                                    reaction,
++                                    ArtistElementType.ELECTRO,
++                                    formerElementTypeGauge.multiple(0.6)
++                                )
++                            )
++                        }
++                }
++            }
++        )
++        @JvmField
++        val MELT_REVERSE = register(
++            "melt_reverse",
++            ElementColors.Reactions.MELT,
++            ArtistElementType.CRYO,
++            arrayOf(ArtistElementType.PYRO),
++            object : ElementReactionTrigger {
++                override fun triggerDamage(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge,
++                    originalDamage: Double
++                ): Double {
++                    return originalDamage * 2.0
++                }
++            }
++        )
++        @JvmField
++        val FROZEN_REVERSE = register(
++            "frozen_reverse",
++            ElementColors.Reactions.FROZEN,
++            ArtistElementType.CRYO,
++            arrayOf(ArtistElementType.HYDRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer as LivingEntity
++                    sufferer.addPotionEffects(
++                        listOf(
++                            PotionEffect(
++                                PotionEffectType.SLOW,
++                                5 * 20,
++                                255
++                            ),
++                            PotionEffect(
++                                PotionEffectType.SLOW_DIGGING,
++                                5 * 20,
++                                255
++                            ),
++                            PotionEffect(
++                                PotionEffectType.WEAKNESS,
++                                5 * 20,
++                                255
++                            ),
++                            PotionEffect(
++                                PotionEffectType.JUMP,
++                                5 * 20,
++                                128 // Over 127 will make player not able to jump
++                            )
++                        )
++                    )
++                }
++            }
++        )
++        @JvmField
++        val SUPER_CONDUCT_REVERSE = register(
++            "super_conduct_reverse",
++            ElementColors.Reactions.SUPER_CONDUCT,
++            ArtistElementType.CRYO,
++            arrayOf(ArtistElementType.ELECTRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    val weak = PotionEffect(
++                        PotionEffectType.WEAKNESS,
++                        12 * 20,
++                        5
++                    )
++                    sufferer.getNearbyEntities(5.0, 5.0, 5.0)
++                        .let {
++                            return@let if (applicationSource !is EntitySource) it else it.filter { LivingEntity ->
++                                LivingEntity != applicationSource.getEntity()
++                            }
++                        }
++                        .filterIsInstance<LivingEntity>()
++                        .forEach {
++                            it.elementApplication.applyElement(
++                                    ArtistReactionSource(
++                                        reaction,
++                                        ArtistElementType.CRYO,
++                                        formerElementTypeGauge.multiple(0.6)
++                                    )
++                                )
++                            it.addPotionEffect(weak)
++                        }
++                }
++            }
++        )
++        @JvmField
++        val SWIRL_CRYO = register(
++            "swirl_cryo",
++            ElementColors.Reactions.SWIRL,
++            ArtistElementType.CRYO,
++            arrayOf(ArtistElementType.ANEMO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.getNearbyEntities(3.0, 3.0, 3.0)
++                        .filterIsInstance<LivingEntity>()
++                        .forEach {
++                            it.elementApplication.applyElement(
++                                    ArtistReactionSource(
++                                        reaction,
++                                        ArtistElementType.CRYO,
++                                        formerElementTypeGauge.multiple(0.6)
++                                    )
++                                )
++                        }
++                }
++            }
++        )
++        @JvmField
++        val BURNING_REVERSE = register(
++            "burning_reverse",
++            ElementColors.Reactions.BURNING,
++            ArtistElementType.DENDRO,
++            arrayOf(ArtistElementType.PYRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.fireTicks = 10 * 20
++                }
++            }
++        )
++        @JvmField
++        val BLOOM_REVERSE = register(
++            "bloom_reverse",
++            ElementColors.Reactions.BLOOM,
++            ArtistElementType.DENDRO,
++            arrayOf(ArtistElementType.HYDRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.elementApplication.applyElement(
++                            ArtistReactionSource(
++                                reaction,
++                                ArtistElementType.REACTER_BLOOM,
++                                ElementGauge(1)
++                            )
++                        )
++                }
++            }
++        )
++        @JvmField
++        val QUICKEN_REVERSE = register(
++            "quicken_reverse",
++            ElementColors.Reactions.SUPER_CONDUCT,
++            ArtistElementType.DENDRO,
++            arrayOf(ArtistElementType.ELECTRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.elementApplication.applyElement(
++                            ArtistReactionSource(
++                                reaction,
++                                ArtistElementType.REACTER_QUICKEN,
++                                ElementGauge(1)
++                            )
++                        )
++                }
++            }
++        )
++        @JvmField
++        val SWIRL = register(
++            "swirl",
++            ElementColors.Reactions.SWIRL,
++            ArtistElementType.ANEMO,
++            arrayOf(
++                ArtistElementType.PYRO,
++                ArtistElementType.HYDRO,
++                ArtistElementType.ELECTRO,
++                ArtistElementType.CRYO
++            ),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    val newReaction = Bukkit.getElementManager().getElementReaction("swirl_${applicationSource.getElementType().getId()}")
++                    newReaction.getTrigger().trigger(reaction, applicationSource, sufferer, formerElementTypeGauge)
++                }
++            }
++        )
++        @JvmField
++        val BURGEON = register(
++            "burgeon",
++            ElementColors.Reactions.BURGEON,
++            ArtistElementType.REACTER_BLOOM,
++            arrayOf(ArtistElementType.PYRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.getNearbyEntities(5.0, 5.0, 5.0)
++                        .filterIsInstance<LivingEntity>()
++                        .forEach {
++                            it.elementalDamage(
++                                formerElementTypeGauge.toDouble() * 2,
++                                ArtistReactionSource(
++                                    reaction,
++                                    ArtistElementType.DENDRO,
++                                    ElementGauge(1)
++                            )
++                        )
++                    }
++                }
++            }
++        )
++        @JvmField
++        val HYPERBLOOM = register(
++            "hyperbloom",
++            ElementColors.Reactions.BURGEON,
++            ArtistElementType.REACTER_BLOOM,
++            arrayOf(ArtistElementType.ELECTRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.getNearbyEntities(2.0, 2.0, 2.0)
++                        .filterIsInstance<LivingEntity>()
++                        .forEach {
++                            it.elementalDamage(
++                                formerElementTypeGauge.toDouble() * 2,
++                                ArtistReactionSource(
++                                    reaction,
++                                    ArtistElementType.DENDRO,
++                                    ElementGauge(1)
++                                )
++                            )
++                    }
++                    sufferer.location.world.createExplosion(sufferer.location, 2.0f)
++                }
++            }
++        )
++        @JvmField
++        val AGGRAVATE = register(
++            "aggravate",
++            ElementColors.Reactions.AGGRAVATE,
++            ArtistElementType.REACTER_QUICKEN,
++            arrayOf(ArtistElementType.ELECTRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.location.world.createExplosion(sufferer.location, 2.0f)
++                }
++
++                override fun triggerDamage(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge,
++                    originalDamage: Double
++                ): Double {
++                    return originalDamage * 1.15
++                }
++            }
++        )
++        @JvmField
++        val SPREAD = register(
++            "spread",
++            ElementColors.Reactions.SPREAD,
++            ArtistElementType.REACTER_QUICKEN,
++            arrayOf(ArtistElementType.DENDRO),
++            object : ElementReactionTrigger {
++                override fun trigger(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge
++                ) {
++                    sufferer.getNearbyEntities(3.0, 3.0, 3.0)
++                        .filterIsInstance<LivingEntity>()
++                        .forEach {
++                            it.elementalDamage(
++                                formerElementTypeGauge.toDouble() * 1.5,
++                                ArtistReactionSource(
++                                    reaction,
++                                    ArtistElementType.DENDRO,
++                                    ElementGauge(1)
++                                )
++                            )
++                    }
++                }
++
++                override fun triggerDamage(
++                    reaction: ElementReaction,
++                    applicationSource: ApplicationSource,
++                    sufferer: LivingEntity,
++                    formerElementTypeGauge: ElementGauge,
++                    originalDamage: Double
++                ): Double {
++                    return originalDamage * 1.25
++                }
++            }
++        )
++
++        private fun register(
++            id: String,
++            color: Color,
++            formerElementType: ElementType,
++            latterElementTypes: Array<ElementType>,
++            trigger: ElementReactionTrigger
++        ) : ElementReaction {
++            return Registry.register(
++                BuiltInRegistries.ELEMENT_REACTION,
++                ResourceLocation(
++                    "artist",
++                    id.lowercase()
++                ),
++                ArtistElementReaction(
++                    id.lowercase(),
++                    color,
++                    formerElementType,
++                    latterElementTypes,
++                    trigger
++                )
++            )
++        }
++
++
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/element/ArtistElementType.kt b/src/main/kotlin/net/deechael/artist/element/ArtistElementType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..945bd199cc7b00d9fc3dcb1abbfc8b3d8d0dcb11
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/element/ArtistElementType.kt
+@@ -0,0 +1,183 @@
++package net.deechael.artist.element
++
++import net.deechael.elements.api.ElementType
++import net.deechael.elements.api.application.ApplicationTrigger
++import net.kyori.adventure.text.Component
++import net.kyori.adventure.text.format.TextDecoration
++import net.minecraft.core.Registry
++import net.minecraft.core.registries.BuiltInRegistries
++import net.minecraft.resources.ResourceLocation
++import org.bukkit.potion.PotionEffect
++import org.bukkit.potion.PotionEffectType
++import java.awt.Color
++
++class ArtistElementType(
++    private val id: String,
++    private val icon: Component,
++    private val color: Color,
++    private val applicable: Boolean,
++    private val reactable: Boolean,
++    private val isReactionElement: Boolean,
++    private val trigger: ApplicationTrigger
++) : ElementType {
++
++    override fun getId(): String {
++        return this.id
++    }
++
++    override fun getIcon(): Component {
++        return this.icon
++    }
++
++    override fun getColor(): Color {
++        return this.color
++    }
++
++    override fun isApplicable(): Boolean {
++        return this.applicable
++    }
++
++    override fun isReactable(): Boolean {
++        return this.reactable
++    }
++
++    override fun isReactionElement(): Boolean {
++        return this.isReactionElement
++    }
++
++    override fun getTrigger(): ApplicationTrigger {
++        return this.trigger
++    }
++
++    companion object {
++
++        @JvmField
++        val PYRO = register(
++            "pyro",
++            Component.text("\uD83D\uDD25"),
++            ElementColors.Elements.PYRO,
++            applicable = true,
++            reactable = true,
++            isReactionElement = false
++        )
++        @JvmField
++        val HYDRO = register(
++            "hydro",
++            Component.text("\uD83C\uDF0A"),
++            ElementColors.Elements.HYDRO,
++            applicable = true,
++            reactable = true,
++            isReactionElement = false
++        )
++        @JvmField
++        val ANEMO = register(
++            "anemo",
++            Component.text("\uD83C\uDF43"),
++            ElementColors.Elements.ANEMO,
++            applicable = true,
++            reactable = true,
++            isReactionElement = false
++        )
++        @JvmField
++        val ELECTRO = register(
++            "electro",
++            Component.text("⚡").decorate(TextDecoration.BOLD),
++            ElementColors.Elements.ELECTRO,
++            applicable = true,
++            reactable = true,
++            isReactionElement = false
++        )
++        @JvmField
++        val DENDRO = register(
++            "dendro",
++            Component.text("\uD83C\uDF40"),
++            ElementColors.Elements.DENDRO,
++            applicable = true,
++            reactable = true,
++            isReactionElement = false
++        )
++        @JvmField
++        val CRYO = register(
++            "cryo",
++            Component.text("\uD83E\uDDCA"),
++            ElementColors.Elements.CRYO,
++            applicable = true,
++            reactable = true,
++            isReactionElement = false
++        ) { source, sufferer ->
++            sufferer.addPotionEffect(
++                PotionEffect(
++                    PotionEffectType.SLOW,
++                    (10 * source.getElementGauge().toDouble()).toInt() * 20,
++                    1
++                )
++            )
++        }
++        @JvmField
++        val HIKARI = register(
++            "hikari",
++            Component.text("☀").decorate(TextDecoration.BOLD),
++            ElementColors.Elements.HIKARI,
++            applicable = true,
++            reactable = true,
++            isReactionElement = false
++        )
++        @JvmField
++        val SHADOW = register(
++            "shadow",
++            Component.text("\uD83C\uDF11"),
++            ElementColors.Elements.SHADOW,
++            applicable = true,
++            reactable = true,
++            isReactionElement = false
++        )
++
++        @JvmField
++        val REACTER_BLOOM = register(
++            "reacter_bloom",
++            Component.text("\uD83C\uDF40").decorate(TextDecoration.UNDERLINED),
++            ElementColors.Elements.HYDRO,
++            applicable = true,
++            reactable = true,
++            isReactionElement = true
++        )
++        @JvmField
++        val REACTER_QUICKEN = register(
++            "reacter_quicken",
++            Component.text("\uD83C\uDF40").decorate(TextDecoration.UNDERLINED),
++            ElementColors.Elements.DENDRO,
++            applicable = true,
++            reactable = true,
++            isReactionElement = true
++        )
++
++        private fun register(
++            id: String,
++            icon: Component,
++            color: Color,
++            applicable: Boolean,
++            reactable: Boolean,
++            isReactionElement: Boolean,
++            trigger: ApplicationTrigger = ApplicationTrigger { _, _ -> }
++        ): ElementType {
++            return Registry.register(
++                BuiltInRegistries.ELEMENT_TYPE,
++                ResourceLocation(
++                    "artist",
++                    id.lowercase()
++                ),
++                ArtistElementType(
++                    id.lowercase(),
++                    icon,
++                    color,
++                    applicable,
++                    reactable,
++                    isReactionElement,
++                    trigger
++                )
++            )
++        }
++
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/element/ElementColors.kt b/src/main/kotlin/net/deechael/artist/element/ElementColors.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..feac431b3d553ba4e55955cfa73f2b511f6a802b
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/element/ElementColors.kt
+@@ -0,0 +1,86 @@
++package net.deechael.artist.element
++
++import java.awt.Color
++
++object ElementColors {
++
++    object Elements {
++
++        @JvmField
++        val PYRO = Color(236, 73, 35)
++
++        @JvmField
++        val HYDRO = Color(0, 191, 255)
++
++        @JvmField
++        val ANEMO = Color(53, 150, 151)
++
++        @JvmField
++        val ELECTRO = Color(148, 93, 196)
++
++        @JvmField
++        val DENDRO = Color(96, 138, 0)
++
++        @JvmField
++        val CRYO = Color(70, 130, 180)
++
++        @JvmField
++        val GEO = Color(222, 189, 108)
++
++        @JvmField
++        val MUT = Color(133, 148, 156)
++
++        @JvmField
++        val HIKARI = Color(243, 220, 170)
++
++        @JvmField
++        val SHADOW = Color(56, 56, 56)
++    }
++
++    object Reactions {
++
++        @JvmField
++        val VAPORIZE = Color(255, 165, 0)
++
++        @JvmField
++        val MELT = Color(255, 165, 0)
++
++        @JvmField
++        val OVERLOADED = Color(255, 128, 153)
++
++        @JvmField
++        val BURNING = Color(236, 73, 35)
++
++        @JvmField
++        val ELECTRO_CHARGED = Color(148, 93, 196)
++
++        @JvmField
++        val FROZEN = Color(70, 130, 180)
++
++        @JvmField
++        val BLOOM = Color(102, 173, 22)
++
++        @JvmField
++        val SUPER_CONDUCT = Color(123, 104, 238)
++
++        @JvmField
++        val QUICKEN = Color(102, 173, 22)
++
++        @JvmField
++        val SWIRL = Color(53, 150, 151)
++
++        @JvmField
++        val BURGEON = Color(236, 73, 35)
++
++        @JvmField
++        val HYPER_BLOOM = Color(148, 93, 196)
++
++        @JvmField
++        val SPREAD = Color(102, 173, 22)
++
++        @JvmField
++        val AGGRAVATE = Color(148, 93, 196)
++
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/element/source/ArtistApplicationSource.kt b/src/main/kotlin/net/deechael/artist/element/source/ArtistApplicationSource.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..e3b94ace769d2b347ed575df8360c1a820aeb7f3
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/element/source/ArtistApplicationSource.kt
+@@ -0,0 +1,20 @@
++package net.deechael.artist.element.source
++
++import net.deechael.elements.api.ElementGauge
++import net.deechael.elements.api.ElementType
++import net.deechael.elements.api.application.source.ApplicationSource
++
++abstract class ArtistApplicationSource(
++    private val elementType: ElementType,
++    private val gauge: ElementGauge
++) : ApplicationSource {
++
++    override fun getElementType(): ElementType {
++        return this.elementType
++    }
++
++    override fun getElementGauge(): ElementGauge {
++        return this.gauge
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/element/source/ArtistEntitySource.kt b/src/main/kotlin/net/deechael/artist/element/source/ArtistEntitySource.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..97297126097a1e2045a1f88fe72643fd77676fad
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/element/source/ArtistEntitySource.kt
+@@ -0,0 +1,18 @@
++package net.deechael.artist.element.source
++
++import net.deechael.elements.api.ElementGauge
++import net.deechael.elements.api.ElementType
++import net.deechael.elements.api.application.source.EntitySource
++import org.bukkit.entity.Entity
++
++class ArtistEntitySource(
++    private val entity: Entity,
++    elementType: ElementType,
++    gauge: ElementGauge
++) : ArtistApplicationSource(elementType, gauge), EntitySource {
++
++    override fun getEntity(): Entity {
++        return this.entity
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/element/source/ArtistEnvironmentSource.kt b/src/main/kotlin/net/deechael/artist/element/source/ArtistEnvironmentSource.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..c135b1beddd7980505f0d6d60109ded75c50e083
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/element/source/ArtistEnvironmentSource.kt
+@@ -0,0 +1,18 @@
++package net.deechael.artist.element.source
++
++import net.deechael.elements.api.ElementGauge
++import net.deechael.elements.api.ElementType
++import net.deechael.elements.api.application.source.EnvironmentSource
++import org.bukkit.Location
++
++class ArtistEnvironmentSource(
++    private val location: Location,
++    elementType: ElementType,
++    gauge: ElementGauge
++) : ArtistApplicationSource(elementType, gauge), EnvironmentSource {
++
++    override fun getLocation(): Location {
++        return this.location
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/element/source/ArtistPluginSource.kt b/src/main/kotlin/net/deechael/artist/element/source/ArtistPluginSource.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..9e5b4bb1f7e419fd29ead0a91fa4c5dc059087de
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/element/source/ArtistPluginSource.kt
+@@ -0,0 +1,18 @@
++package net.deechael.artist.element.source
++
++import net.deechael.elements.api.ElementGauge
++import net.deechael.elements.api.ElementType
++import net.deechael.elements.api.application.source.PluginSource
++import org.bukkit.plugin.Plugin
++
++class ArtistPluginSource(
++    private val plugin: Plugin,
++    elementType: ElementType,
++    gauge: ElementGauge
++) : ArtistApplicationSource(elementType, gauge), PluginSource {
++
++    override fun getPlugin(): Plugin {
++        return this.plugin
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/element/source/ArtistReactionSource.kt b/src/main/kotlin/net/deechael/artist/element/source/ArtistReactionSource.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..be66b2ab4cba6ea86712780783da99851ce7527c
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/element/source/ArtistReactionSource.kt
+@@ -0,0 +1,15 @@
++package net.deechael.artist.element.source
++
++import net.deechael.elements.api.ElementGauge
++import net.deechael.elements.api.ElementType
++import net.deechael.elements.api.application.source.ReactionSource
++import net.deechael.elements.api.reaction.ElementReaction
++
++class ArtistReactionSource(private val reaction: ElementReaction, elementType: ElementType, gauge: ElementGauge) :
++    ArtistApplicationSource(elementType, gauge), ReactionSource {
++
++    override fun getReaction(): ElementReaction {
++        return this.reaction
++    }
++
++}
+\ No newline at end of file

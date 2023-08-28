@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Mon, 28 Aug 2023 23:28:46 +0800
+Subject: [PATCH] element api modified
+
+
+diff --git a/src/main/java/org/bukkit/Bukkit.java b/src/main/java/org/bukkit/Bukkit.java
+index 5004cab183c687241c5ccadbf2492903d97e2e23..6a525705b78da8057191f68a163c0132d1c5cb2a 100644
+--- a/src/main/java/org/bukkit/Bukkit.java
++++ b/src/main/java/org/bukkit/Bukkit.java
+@@ -2759,7 +2759,7 @@ public final class Bukkit {
+      * Returns the element manager
+      * @return element manager
+      */
+-    public ElementManager getElementManager() {
++    public static ElementManager getElementManager() {
+         return server.getElementManager();
+     }
+     // Artist end
+diff --git a/src/main/java/org/bukkit/entity/Damageable.java b/src/main/java/org/bukkit/entity/Damageable.java
+index fc4d3bcd9b16097086fef7975274d825b65adb10..57902b69986d29c64782734a2a27ba83085f3d55 100644
+--- a/src/main/java/org/bukkit/entity/Damageable.java
++++ b/src/main/java/org/bukkit/entity/Damageable.java
+@@ -1,5 +1,6 @@
+ package org.bukkit.entity;
+ 
++import net.deechael.elements.api.application.source.ApplicationSource;
+ import org.bukkit.attribute.Attribute;
+ import org.jetbrains.annotations.Nullable;
+ 
+@@ -86,4 +87,6 @@ public interface Damageable extends Entity {
+      */
+     @Deprecated
+     void resetMaxHealth();
++
++    void elementalDamage(double amount, ApplicationSource source);
+ }
+diff --git a/src/main/java/org/bukkit/entity/LivingEntity.java b/src/main/java/org/bukkit/entity/LivingEntity.java
+index 19e58e62ae442ef9be02ca7fa2f55e370a54afa4..0ee9a1287cfd6d72438b60fa88ecc58a1e6b856c 100644
+--- a/src/main/java/org/bukkit/entity/LivingEntity.java
++++ b/src/main/java/org/bukkit/entity/LivingEntity.java
+@@ -4,6 +4,8 @@ import java.util.Collection;
+ import java.util.List;
+ import java.util.Set;
+ import java.util.UUID;
++
++import net.deechael.elements.api.application.ElementApplication;
+ import org.bukkit.FluidCollisionMode;
+ import org.bukkit.Location;
+ import org.bukkit.Material;
+@@ -1192,4 +1194,6 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+      */
+     void setBodyYaw(float bodyYaw);
+     // Paper end
++
++    ElementApplication getElementApplication();
+ }
+diff --git a/src/main/kotlin/net/deechael/elements/api/ElementType.kt b/src/main/kotlin/net/deechael/elements/api/ElementType.kt
+index c7901bc0cce1db90c7caa129f87906b12603a5e7..20d0f33809bb080cad5546889ba52ad56477315d 100644
+--- a/src/main/kotlin/net/deechael/elements/api/ElementType.kt
++++ b/src/main/kotlin/net/deechael/elements/api/ElementType.kt
+@@ -1,13 +1,14 @@
+ package net.deechael.elements.api
+ 
+ import net.deechael.elements.api.application.ApplicationTrigger
++import net.kyori.adventure.text.Component
+ import java.awt.Color
+ 
+ interface ElementType {
+ 
+     fun getId(): String
+ 
+-    fun getIcon(): String
++    fun getIcon(): Component
+ 
+     fun getColor(): Color
+ 
+diff --git a/src/main/kotlin/net/deechael/elements/api/application/ApplicationTrigger.kt b/src/main/kotlin/net/deechael/elements/api/application/ApplicationTrigger.kt
+index 96a754b025e5316e57d612554d3a313437f5ea69..f374b917d0321a50a90badfb1cd9d90b1df1e3f7 100644
+--- a/src/main/kotlin/net/deechael/elements/api/application/ApplicationTrigger.kt
++++ b/src/main/kotlin/net/deechael/elements/api/application/ApplicationTrigger.kt
+@@ -1,12 +1,12 @@
+ package net.deechael.elements.api.application
+ 
+ import net.deechael.elements.api.application.source.ApplicationSource
+-import org.bukkit.entity.Entity
++import org.bukkit.entity.LivingEntity
+ 
+ @FunctionalInterface
+ fun interface ApplicationTrigger {
+ 
+-    fun trigger(applicationSource: ApplicationSource, sufferer: Entity)
++    fun trigger(applicationSource: ApplicationSource, sufferer: LivingEntity)
+ 
+     companion object {
+ 
+diff --git a/src/main/kotlin/net/deechael/elements/api/reaction/ElementReactionTrigger.kt b/src/main/kotlin/net/deechael/elements/api/reaction/ElementReactionTrigger.kt
+index af10838c4e21429422133d792e6745215c5f84fc..ba2bcbdb8ff250026f5de2dd9a1e4cd2625e589c 100644
+--- a/src/main/kotlin/net/deechael/elements/api/reaction/ElementReactionTrigger.kt
++++ b/src/main/kotlin/net/deechael/elements/api/reaction/ElementReactionTrigger.kt
+@@ -2,7 +2,7 @@ package net.deechael.elements.api.reaction
+ 
+ import net.deechael.elements.api.ElementGauge
+ import net.deechael.elements.api.application.source.ApplicationSource
+-import org.bukkit.entity.Entity
++import org.bukkit.entity.LivingEntity
+ 
+ @FunctionalInterface
+ interface ElementReactionTrigger {
+@@ -10,7 +10,7 @@ interface ElementReactionTrigger {
+     fun trigger(
+         reaction: ElementReaction,
+         applicationSource: ApplicationSource,
+-        sufferer: Entity,
++        sufferer: LivingEntity,
+         formerElementTypeGauge: ElementGauge
+     ) {
+     }
+@@ -18,7 +18,7 @@ interface ElementReactionTrigger {
+     fun triggerDamage(
+         reaction: ElementReaction,
+         applicationSource: ApplicationSource,
+-        sufferer: Entity,
++        sufferer: LivingEntity,
+         formerElementTypeGauge: ElementGauge,
+         originalDamage: Double
+     ): Double {

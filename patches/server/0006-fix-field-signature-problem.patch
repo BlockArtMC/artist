@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Fri, 1 Sep 2023 00:45:33 +0800
+Subject: [PATCH] fix field signature problem
+
+
+diff --git a/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt b/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt
+index f1b849bfe74f0997b5f982a0f7a9e1d9d6c39c54..40a0c9636d380664649dec66a67804e27fd224f2 100644
+--- a/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt
++++ b/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt
+@@ -4,7 +4,7 @@ import net.deechael.skills.api.trigger.TriggerEnvironment
+ import net.minecraft.world.entity.LivingEntity
+ import org.bukkit.inventory.ItemStack
+ 
+-abstract class AbstractTriggerEnvironment(val target: LivingEntity, val itemStack: ItemStack?): TriggerEnvironment {
++abstract class AbstractTriggerEnvironment(private val target: LivingEntity, private val itemStack: ItemStack?): TriggerEnvironment {
+ 
+     override fun getTarget(): org.bukkit.entity.LivingEntity {
+         return this.target.bukkitLivingEntity

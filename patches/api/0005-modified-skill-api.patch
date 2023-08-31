@@ -1,0 +1,128 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Fri, 1 Sep 2023 00:34:00 +0800
+Subject: [PATCH] modified skill api
+
+
+diff --git a/src/main/java/org/bukkit/Bukkit.java b/src/main/java/org/bukkit/Bukkit.java
+index 6a525705b78da8057191f68a163c0132d1c5cb2a..c36aca9bb5a0f8a67aa84a690a010445bd7712af 100644
+--- a/src/main/java/org/bukkit/Bukkit.java
++++ b/src/main/java/org/bukkit/Bukkit.java
+@@ -16,6 +16,7 @@ import java.util.function.Consumer;
+ import java.util.logging.Logger;
+ 
+ import net.deechael.elements.api.ElementManager;
++import net.deechael.skills.api.SkillManager;
+ import org.bukkit.Warning.WarningState;
+ import org.bukkit.advancement.Advancement;
+ import org.bukkit.block.data.BlockData;
+@@ -2762,6 +2763,10 @@ public final class Bukkit {
+     public static ElementManager getElementManager() {
+         return server.getElementManager();
+     }
++
++    public static SkillManager getSkillManager() {
++        return server.getSkillManager();
++    }
+     // Artist end
+ 
+     @NotNull
+diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
+index 8a22f65498f51507ea09b522a17e360035184c5e..b0904d838ef2d5690d5e0d1a26ea15895f480ff6 100644
+--- a/src/main/java/org/bukkit/Server.java
++++ b/src/main/java/org/bukkit/Server.java
+@@ -16,6 +16,7 @@ import java.util.function.Consumer;
+ import java.util.logging.Logger;
+ 
+ import net.deechael.elements.api.ElementManager;
++import net.deechael.skills.api.SkillManager;
+ import org.bukkit.Warning.WarningState;
+ import org.bukkit.advancement.Advancement;
+ import org.bukkit.block.data.BlockData;
+@@ -2413,5 +2414,7 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
+      * @return element manager
+      */
+     ElementManager getElementManager();
++
++    SkillManager getSkillManager();
+     // Artist end
+ }
+diff --git a/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt b/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt
+index 4ed61ba3d70f6cda4f9252d89a2cad365c8926b4..25bc85fcfba81d87a7ea3de838a5aaa24d506088 100644
+--- a/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt
++++ b/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt
+@@ -1,5 +1,9 @@
+ package net.deechael.skills.api
+ 
++import net.deechael.skills.api.trigger.Trigger
++
+ abstract class PassiveSkill(id: String, cooldown: Double, manaCost: Int) : Skill(id, cooldown, manaCost) {
+ 
++    abstract fun getTriggers(): List<Trigger>
++
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/skills/api/SkillManager.kt b/src/main/kotlin/net/deechael/skills/api/SkillManager.kt
+index 1d7828949c014fa11fa224c5a38878ba3cdf4ce4..d6cc2f67d4c9eb994bd447182203dbe8c30e142c 100644
+--- a/src/main/kotlin/net/deechael/skills/api/SkillManager.kt
++++ b/src/main/kotlin/net/deechael/skills/api/SkillManager.kt
+@@ -1,13 +1,24 @@
+ package net.deechael.skills.api
+ 
++import net.deechael.skills.api.trigger.Trigger
+ import org.bukkit.NamespacedKey
+ 
+ interface SkillManager {
+ 
+     fun registerSkill(key: NamespacedKey, skill: Skill)
+ 
+-    fun getSkill(key: NamespacedKey)
++    fun hasSkill(key: NamespacedKey): Boolean
++
++    fun getSkill(key: NamespacedKey): Skill
+ 
+     fun getSkills(): Map<NamespacedKey, Skill>
+ 
++    fun registerTrigger(key: NamespacedKey): Trigger
++
++    fun hasTrigger(key: NamespacedKey): Boolean
++
++    fun getTrigger(key: NamespacedKey): Trigger
++
++    fun getTriggers(): Map<NamespacedKey, Trigger>
++
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/skills/api/trigger/Trigger.kt b/src/main/kotlin/net/deechael/skills/api/trigger/Trigger.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..06573aef142d076779e253b3608bd3ea664fda46
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/skills/api/trigger/Trigger.kt
+@@ -0,0 +1,7 @@
++package net.deechael.skills.api.trigger
++
++interface Trigger {
++
++    fun trigger(environment: TriggerEnvironment)
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/skills/api/trigger/TriggerEnvironment.kt b/src/main/kotlin/net/deechael/skills/api/trigger/TriggerEnvironment.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..1e957bce4a8698ef452ec2f90d868d53d693d3b6
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/skills/api/trigger/TriggerEnvironment.kt
+@@ -0,0 +1,12 @@
++package net.deechael.skills.api.trigger
++
++import org.bukkit.entity.LivingEntity
++import org.bukkit.inventory.ItemStack
++
++interface TriggerEnvironment {
++
++    fun getTarget(): LivingEntity
++
++    fun getItemStack(): ItemStack?
++
++}
+\ No newline at end of file

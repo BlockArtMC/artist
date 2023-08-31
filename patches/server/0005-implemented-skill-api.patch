@@ -1,0 +1,263 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Fri, 1 Sep 2023 00:34:18 +0800
+Subject: [PATCH] implemented skill api
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+index 1ffbfea8aed80c0aed5524f2db1aa046925a236b..a904a1322f1a24ac6379deed18583734791403fc 100644
+--- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
++++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+@@ -24,6 +24,7 @@ import io.papermc.paper.adventure.PaperAdventure;
+ import net.deechael.artist.element.ArtistElementApplication;
+ import net.deechael.artist.element.ArtistElementType;
+ import net.deechael.artist.element.source.ArtistEnvironmentSource;
++import net.deechael.artist.skill.ArtistSkillContainer;
+ import net.deechael.elements.api.ElementGauge;
+ import net.deechael.elements.api.ElementType;
+ import net.deechael.elements.api.application.source.ApplicationSource;
+@@ -279,6 +280,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+     public boolean silentDeath = false; // Paper - mark entity as dying silently for cancellable death event
+     public net.kyori.adventure.util.TriState frictionState = net.kyori.adventure.util.TriState.NOT_SET; // Paper
+     private ArtistElementApplication elementApplication = new ArtistElementApplication(this);
++    private ArtistSkillContainer skillContainer = new ArtistSkillContainer();
+     private Display.TextDisplay namePlate;
+ 
+     @Override
+@@ -4540,6 +4542,10 @@ public abstract class LivingEntity extends Entity implements Attackable {
+         return this.elementApplication;
+     }
+ 
++    public ArtistSkillContainer getSkillContainer() {
++        return this.skillContainer;
++    }
++
+     public static record Fallsounds(SoundEvent small, SoundEvent big) {
+ 
+     }
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 2b504326cba1513b37360af0e43639e6a126104f..05f0428f2ac8f6d2e9fc83a6d03f2af96fd4e8f9 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
+ import javax.imageio.ImageIO;
+ 
+ import net.deechael.artist.element.ArtistElementManager;
++import net.deechael.artist.skill.ArtistSkillManager;
+ import net.minecraft.advancements.Advancement;
+ import net.minecraft.commands.CommandSourceStack;
+ import net.minecraft.commands.Commands;
+@@ -309,6 +310,7 @@ public final class CraftServer implements Server {
+     private final CraftPotionBrewer potionBrewer = new CraftPotionBrewer(); // Paper
+ 
+     private final ArtistElementManager elementManager = new ArtistElementManager();
++    private final ArtistSkillManager skillManager = new ArtistSkillManager();
+ 
+     // Paper start - Folia region threading API
+     private final io.papermc.paper.threadedregions.scheduler.FallbackRegionScheduler regionizedScheduler = new io.papermc.paper.threadedregions.scheduler.FallbackRegionScheduler();
+@@ -3155,4 +3157,9 @@ public final class CraftServer implements Server {
+         return this.elementManager;
+     }
+ 
++    @Override
++    public ArtistSkillManager getSkillManager() {
++        return this.skillManager;
++    }
++
+ }
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
+index 3913acf2c1a74948547fde6391f59b9b384f2676..c219f6eff82c8a05654359ee0007125cd382d31c 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
+@@ -12,6 +12,7 @@ import java.util.UUID;
+ 
+ import net.deechael.elements.api.application.ElementApplication;
+ import net.deechael.elements.api.application.source.ApplicationSource;
++import net.deechael.skills.api.SkillContainer;
+ import net.minecraft.network.protocol.game.ClientboundHurtAnimationPacket;
+ import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.sounds.SoundEvent;
+@@ -1108,4 +1109,8 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+         return this.getHandle().getElementApplication();
+     }
+ 
++    @Override
++    public SkillContainer getSkillContainer() {
++        return this.getHandle().getSkillContainer();
++    }
+ }
+diff --git a/src/main/kotlin/net/deechael/artist/skill/ArtistSkillContainer.kt b/src/main/kotlin/net/deechael/artist/skill/ArtistSkillContainer.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..9e59b7d8d0f6cfd2d15f05e38c93d87ba999b8ce
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/skill/ArtistSkillContainer.kt
+@@ -0,0 +1,42 @@
++package net.deechael.artist.skill
++
++import net.deechael.skills.api.PassiveSkill
++import net.deechael.skills.api.Skill
++import net.deechael.skills.api.SkillContainer
++import net.deechael.skills.api.SkillSlot
++
++class ArtistSkillContainer: SkillContainer {
++
++    private var passiveSkill: PassiveSkill? = null
++    private val skillSlots = mutableMapOf<SkillSlot, Skill?>()
++
++    override fun getPassiveSkill(): PassiveSkill? {
++        return this.passiveSkill
++    }
++
++    override fun setPassiveSkill(passiveSkill: PassiveSkill?) {
++        this.passiveSkill = passiveSkill
++    }
++
++    override fun hasPassiveSkill(): Boolean {
++        return this.passiveSkill != null
++    }
++
++    override fun getSkill(slot: SkillSlot): Skill? {
++        return this.skillSlots[slot]
++    }
++
++    override fun setSkill(slot: SkillSlot, skill: Skill?) {
++        for (skillSlot in SkillSlot.entries) {
++            if (this.skillSlots[skillSlot] == null)
++                continue
++            if (this.skillSlots[skillSlot] == skill)
++                throw IllegalAccessException("The skill has been in another skill slot!")
++        }
++        this.skillSlots[slot] = skill
++    }
++
++    override fun hasSkill(slot: SkillSlot): Boolean {
++        return this.skillSlots[slot] != null
++    }
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/skill/ArtistSkillManager.kt b/src/main/kotlin/net/deechael/artist/skill/ArtistSkillManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..9927c70dfa8d807be20b0644b9f7ab7a4f4daf85
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/skill/ArtistSkillManager.kt
+@@ -0,0 +1,72 @@
++package net.deechael.artist.skill
++
++import net.deechael.artist.skill.trigger.ArtistTrigger
++import net.deechael.skills.api.Skill
++import net.deechael.skills.api.SkillManager
++import net.deechael.skills.api.trigger.Trigger
++import org.bukkit.NamespacedKey
++
++class ArtistSkillManager : SkillManager {
++
++    private val registeredSkills = mutableMapOf<NamespacedKey, Skill>()
++    private val registeredTriggers = mutableMapOf<NamespacedKey, Trigger>()
++
++    private fun findNamespaceKeyInSkills(key: NamespacedKey): Skill? {
++        if (this.registeredSkills.containsKey(key))
++            return registeredSkills[key]
++        for (namespacedKey in this.registeredSkills.keys) {
++            if (namespacedKey.namespace == key.namespace && namespacedKey.key == key.key)
++                return this.registeredSkills[namespacedKey]
++        }
++        return null
++    }
++
++    private fun findNamespaceKeyInTriggers(key: NamespacedKey): Trigger? {
++        if (this.registeredTriggers.containsKey(key))
++            return registeredTriggers[key]
++        for (namespacedKey in this.registeredTriggers.keys) {
++            if (namespacedKey.namespace == key.namespace && namespacedKey.key == key.key)
++                return this.registeredTriggers[namespacedKey]
++        }
++        return null
++    }
++
++    override fun registerSkill(key: NamespacedKey, skill: Skill) {
++        if (this.hasSkill(key))
++            throw ArrayStoreException("The skill with specific key has been registered already!")
++        if (this.registeredSkills.containsValue(skill))
++            throw ArrayStoreException("The skill has been registered already!")
++        this.registeredSkills[key] = skill
++    }
++
++    override fun hasSkill(key: NamespacedKey): Boolean {
++        return this.findNamespaceKeyInSkills(key) != null
++    }
++
++    override fun getSkill(key: NamespacedKey): Skill {
++        return this.findNamespaceKeyInSkills(key)!!
++    }
++
++    override fun getSkills(): Map<NamespacedKey, Skill> {
++        return this.registeredSkills.toMap()
++    }
++
++    override fun registerTrigger(key: NamespacedKey): Trigger {
++        if (this.hasTrigger(key))
++            throw ArrayStoreException("The trigger with specific key has been registered already!")
++        return ArtistTrigger().also { this.registeredTriggers[key] = it }
++    }
++
++    override fun hasTrigger(key: NamespacedKey): Boolean {
++        return this.findNamespaceKeyInTriggers(key) != null
++    }
++
++    override fun getTrigger(key: NamespacedKey): Trigger {
++        return this.findNamespaceKeyInTriggers(key)!!
++    }
++
++    override fun getTriggers(): Map<NamespacedKey, Trigger> {
++        return this.registeredTriggers.toMap()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt b/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f1b849bfe74f0997b5f982a0f7a9e1d9d6c39c54
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt
+@@ -0,0 +1,17 @@
++package net.deechael.artist.skill.trigger
++
++import net.deechael.skills.api.trigger.TriggerEnvironment
++import net.minecraft.world.entity.LivingEntity
++import org.bukkit.inventory.ItemStack
++
++abstract class AbstractTriggerEnvironment(val target: LivingEntity, val itemStack: ItemStack?): TriggerEnvironment {
++
++    override fun getTarget(): org.bukkit.entity.LivingEntity {
++        return this.target.bukkitLivingEntity
++    }
++
++    override fun getItemStack(): ItemStack? {
++        return this.itemStack
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/skill/trigger/ArtistTrigger.kt b/src/main/kotlin/net/deechael/artist/skill/trigger/ArtistTrigger.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..fcf49c52c3e41200c05c221ca87666a92df15a65
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/skill/trigger/ArtistTrigger.kt
+@@ -0,0 +1,16 @@
++package net.deechael.artist.skill.trigger
++
++import net.deechael.skills.api.trigger.Trigger
++import net.deechael.skills.api.trigger.TriggerEnvironment
++
++class ArtistTrigger: Trigger {
++
++    override fun trigger(environment: TriggerEnvironment) {
++        val entity = environment.getTarget()
++        val passiveSkill = entity.skillContainer.getPassiveSkill() ?: return
++        if (!passiveSkill.getTriggers().contains(this))
++            return
++        passiveSkill.trigger(environment.getTarget(), environment.getItemStack())
++    }
++
++}
+\ No newline at end of file

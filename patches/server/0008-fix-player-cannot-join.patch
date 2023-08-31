@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Fri, 1 Sep 2023 01:58:13 +0800
+Subject: [PATCH] fix player cannot join
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+index a904a1322f1a24ac6379deed18583734791403fc..a68bfaee02f012c98376ad15d1799028d20e96d6 100644
+--- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
++++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+@@ -134,6 +134,7 @@ import net.minecraft.world.phys.Vec3;
+ import net.minecraft.world.scores.PlayerTeam;
+ import org.bukkit.craftbukkit.entity.CraftHumanEntity;
+ import org.bukkit.craftbukkit.entity.CraftLivingEntity;
++import org.bukkit.craftbukkit.util.CraftLocation;
+ import org.bukkit.entity.HumanEntity;
+ import org.bukkit.entity.TextDisplay;
+ import org.slf4j.Logger;
+@@ -321,7 +322,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+ 
+         this.brain = this.makeBrain(new Dynamic(dynamicopsnbt, (Tag) dynamicopsnbt.createMap((Map) ImmutableMap.of(dynamicopsnbt.createString("memories"), (Tag) dynamicopsnbt.emptyMap()))));
+ 
+-        this.namePlate = (Display.TextDisplay) this.level().getWorld().createEntity(this.getBukkitEntity().getLocation(), TextDisplay.class);
++        this.namePlate = (Display.TextDisplay) this.level().getWorld().createEntity(CraftLocation.toBukkit(this.position()), TextDisplay.class);
+         this.namePlate.setCustomNameVisible(true);
+     }
+ 

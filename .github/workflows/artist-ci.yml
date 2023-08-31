@@ -44,11 +44,16 @@ jobs:
           ./gradlew publish
       - name: Rename Jar
         run: "mv build/libs/artist-paperclip-${{ env.MC_VERSION }}-R0.1-SNAPSHOT-reobf.jar build/libs/artist-${{ env.MC_VERSION }}-${{ env.workflow }}.jar"
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: artist-1.20.1
+          path: "build/libs/artist-${{ env.MC_VERSION }}-${{ env.workflow }}.jar"
       - name: Release Artifacts
         uses: marvinpinto/action-automatic-releases@latest
         with:
-          title: "main/1.19.3 #${{ env.workflow }}"
-          automatic_release_tag: "Artist #${{ env.workflow }}"
+          title: "1.20.1 #${{ env.workflow }}"
+          automatic_release_tag: "Artist-#${{ env.workflow }}"
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           files: "build/libs/artist-${{ env.MC_VERSION }}-${{ env.workflow }}.jar"
           prerelease: false

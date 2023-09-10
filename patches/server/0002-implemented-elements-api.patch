@@ -328,7 +328,7 @@ index f0ce29d21fe9af803ce4e41b8c037b2ec5d1b124..3913acf2c1a74948547fde6391f59b9b
  }
 diff --git a/src/main/kotlin/net/deechael/artist/element/ArtistElementApplication.kt b/src/main/kotlin/net/deechael/artist/element/ArtistElementApplication.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..13452017604c3cad3c08fed22d07a385ae880fe6
+index 0000000000000000000000000000000000000000..9d9cb0647e8fe5365628387cb7668d56ebdd9a41
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/element/ArtistElementApplication.kt
 @@ -0,0 +1,125 @@
@@ -460,7 +460,7 @@ index 0000000000000000000000000000000000000000..13452017604c3cad3c08fed22d07a385
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/element/ArtistElementManager.kt b/src/main/kotlin/net/deechael/artist/element/ArtistElementManager.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..253c38971ba0d6823ad10012f23f2c391b3b23d0
+index 0000000000000000000000000000000000000000..8a585925bd39a9ea382cbfd6fd02bc66c0868e4d
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/element/ArtistElementManager.kt
 @@ -0,0 +1,56 @@
@@ -523,7 +523,7 @@ index 0000000000000000000000000000000000000000..253c38971ba0d6823ad10012f23f2c39
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/element/ArtistElementReaction.kt b/src/main/kotlin/net/deechael/artist/element/ArtistElementReaction.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..1f2d3f30b5b57fd673100cf52cf45baf1e26de48
+index 0000000000000000000000000000000000000000..13df7048cb53fa25fed5462c6a593530aff6a03a
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/element/ArtistElementReaction.kt
 @@ -0,0 +1,801 @@
@@ -1331,7 +1331,7 @@ index 0000000000000000000000000000000000000000..1f2d3f30b5b57fd673100cf52cf45baf
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/element/ArtistElementType.kt b/src/main/kotlin/net/deechael/artist/element/ArtistElementType.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..945bd199cc7b00d9fc3dcb1abbfc8b3d8d0dcb11
+index 0000000000000000000000000000000000000000..51ceba160386648e9a14bc6bd9edee9d531d053a
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/element/ArtistElementType.kt
 @@ -0,0 +1,183 @@
@@ -1521,7 +1521,7 @@ index 0000000000000000000000000000000000000000..945bd199cc7b00d9fc3dcb1abbfc8b3d
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/element/ElementColors.kt b/src/main/kotlin/net/deechael/artist/element/ElementColors.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..feac431b3d553ba4e55955cfa73f2b511f6a802b
+index 0000000000000000000000000000000000000000..33536a22b448c91f6d33937b3d213355d52d31d3
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/element/ElementColors.kt
 @@ -0,0 +1,86 @@
@@ -1614,7 +1614,7 @@ index 0000000000000000000000000000000000000000..feac431b3d553ba4e55955cfa73f2b51
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/element/source/ArtistApplicationSource.kt b/src/main/kotlin/net/deechael/artist/element/source/ArtistApplicationSource.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..e3b94ace769d2b347ed575df8360c1a820aeb7f3
+index 0000000000000000000000000000000000000000..3d4b1802d742e16b3ee4e2b78818e2782542dd1b
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/element/source/ArtistApplicationSource.kt
 @@ -0,0 +1,20 @@
@@ -1641,7 +1641,7 @@ index 0000000000000000000000000000000000000000..e3b94ace769d2b347ed575df8360c1a8
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/element/source/ArtistEntitySource.kt b/src/main/kotlin/net/deechael/artist/element/source/ArtistEntitySource.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..97297126097a1e2045a1f88fe72643fd77676fad
+index 0000000000000000000000000000000000000000..8119c4d93bdc6f2f2cb7b196fc5bbf3ade850e56
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/element/source/ArtistEntitySource.kt
 @@ -0,0 +1,18 @@
@@ -1666,7 +1666,7 @@ index 0000000000000000000000000000000000000000..97297126097a1e2045a1f88fe72643fd
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/element/source/ArtistEnvironmentSource.kt b/src/main/kotlin/net/deechael/artist/element/source/ArtistEnvironmentSource.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..c135b1beddd7980505f0d6d60109ded75c50e083
+index 0000000000000000000000000000000000000000..bbbfdb5e5954b34995233347e49922af38109211
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/element/source/ArtistEnvironmentSource.kt
 @@ -0,0 +1,18 @@
@@ -1691,7 +1691,7 @@ index 0000000000000000000000000000000000000000..c135b1beddd7980505f0d6d60109ded7
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/element/source/ArtistPluginSource.kt b/src/main/kotlin/net/deechael/artist/element/source/ArtistPluginSource.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..9e5b4bb1f7e419fd29ead0a91fa4c5dc059087de
+index 0000000000000000000000000000000000000000..629133a4e97f6821ae33784dcc7bb61028c04751
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/element/source/ArtistPluginSource.kt
 @@ -0,0 +1,18 @@
@@ -1716,7 +1716,7 @@ index 0000000000000000000000000000000000000000..9e5b4bb1f7e419fd29ead0a91fa4c5dc
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/element/source/ArtistReactionSource.kt b/src/main/kotlin/net/deechael/artist/element/source/ArtistReactionSource.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..be66b2ab4cba6ea86712780783da99851ce7527c
+index 0000000000000000000000000000000000000000..4bd8a2978609e374fa38a1672784fe469a615d3f
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/element/source/ArtistReactionSource.kt
 @@ -0,0 +1,15 @@

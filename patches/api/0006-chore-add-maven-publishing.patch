@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Sun, 10 Sep 2023 22:15:52 +0800
+Subject: [PATCH] chore: add maven publishing
+
+
+diff --git a/build.gradle.kts b/build.gradle.kts
+index 769a87d32b0858b5e9b0ae9aefe97f059327e48d..7a9fc447ceb150e6081251711da4995e048aa4e7 100644
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -154,3 +154,31 @@ tasks.check {
+     dependsOn(scanJar)
+ }
+ // Paper end
++
++// Artist start
++publishing {
++    configure<PublishingExtension> {
++        publications.create<MavenPublication>(name) {
++            from(components["kotlin"])
++
++            groupId = "net.deechael.artist"
++            artifactId = "artist-api"
++            version = project.version.toString()
++        }
++    }
++
++    repositories {
++        maven {
++            val releaseRepo = "https://nexus.nostaldaisuki.cc/repository/maven-releases/"
++            val snapshotRepo = "https://nexus.nostaldaisuki.cc/repository/maven-snapshots/"
++
++            url = uri(if (project.version.toString().endsWith("SNAPSHOT")) snapshotRepo else releaseRepo)
++
++            credentials {
++                username = System.getProperty("nostalRepoUsername")
++                password = System.getProperty("nostalRepoPassword")
++            }
++        }
++    }
++}
++// Artist end
+\ No newline at end of file

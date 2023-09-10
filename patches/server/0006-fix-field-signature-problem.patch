@@ -5,7 +5,7 @@ Subject: [PATCH] fix field signature problem
 
 
 diff --git a/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt b/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt
-index f1b849bfe74f0997b5f982a0f7a9e1d9d6c39c54..40a0c9636d380664649dec66a67804e27fd224f2 100644
+index b2d25cddd894e292078770460b025ec9a2ca548f..72cf9f1d69685cd7c90b756633ba6c4aded0e05d 100644
 --- a/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt
 +++ b/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt
 @@ -4,7 +4,7 @@ import net.deechael.skills.api.trigger.TriggerEnvironment

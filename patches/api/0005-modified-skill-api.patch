@@ -48,7 +48,7 @@ index 8a22f65498f51507ea09b522a17e360035184c5e..b0904d838ef2d5690d5e0d1a26ea1589
      // Artist end
  }
 diff --git a/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt b/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt
-index 4ed61ba3d70f6cda4f9252d89a2cad365c8926b4..25bc85fcfba81d87a7ea3de838a5aaa24d506088 100644
+index 2e5f99876df2d30dd5ec082be59c9749546810ae..74f0b2256b0a2dd5ffb77332ab166c3ecd454557 100644
 --- a/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt
 +++ b/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt
 @@ -1,5 +1,9 @@
@@ -63,7 +63,7 @@ index 4ed61ba3d70f6cda4f9252d89a2cad365c8926b4..25bc85fcfba81d87a7ea3de838a5aaa2
  }
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/skills/api/SkillManager.kt b/src/main/kotlin/net/deechael/skills/api/SkillManager.kt
-index 1d7828949c014fa11fa224c5a38878ba3cdf4ce4..d6cc2f67d4c9eb994bd447182203dbe8c30e142c 100644
+index 19cbef4153dadb775ca0824fcc3991c0d211d937..2468355f8bec9b2a8c17e2746c4d4b995ae9a291 100644
 --- a/src/main/kotlin/net/deechael/skills/api/SkillManager.kt
 +++ b/src/main/kotlin/net/deechael/skills/api/SkillManager.kt
 @@ -1,13 +1,24 @@
@@ -95,7 +95,7 @@ index 1d7828949c014fa11fa224c5a38878ba3cdf4ce4..d6cc2f67d4c9eb994bd447182203dbe8
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/skills/api/trigger/Trigger.kt b/src/main/kotlin/net/deechael/skills/api/trigger/Trigger.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..06573aef142d076779e253b3608bd3ea664fda46
+index 0000000000000000000000000000000000000000..a26e218785162c67d29335d7622417cf4a450006
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/skills/api/trigger/Trigger.kt
 @@ -0,0 +1,7 @@
@@ -109,7 +109,7 @@ index 0000000000000000000000000000000000000000..06573aef142d076779e253b3608bd3ea
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/skills/api/trigger/TriggerEnvironment.kt b/src/main/kotlin/net/deechael/skills/api/trigger/TriggerEnvironment.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..1e957bce4a8698ef452ec2f90d868d53d693d3b6
+index 0000000000000000000000000000000000000000..fe52a539e911e38af2e0bb15662f6f375dc8a842
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/skills/api/trigger/TriggerEnvironment.kt
 @@ -0,0 +1,12 @@

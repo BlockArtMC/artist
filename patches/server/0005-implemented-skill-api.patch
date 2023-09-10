@@ -88,7 +88,7 @@ index 3913acf2c1a74948547fde6391f59b9b384f2676..c219f6eff82c8a05654359ee0007125c
  }
 diff --git a/src/main/kotlin/net/deechael/artist/skill/ArtistSkillContainer.kt b/src/main/kotlin/net/deechael/artist/skill/ArtistSkillContainer.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..9e59b7d8d0f6cfd2d15f05e38c93d87ba999b8ce
+index 0000000000000000000000000000000000000000..268b0e82b2e9d1cf3be1c268e4acdbf4ff344554
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/skill/ArtistSkillContainer.kt
 @@ -0,0 +1,42 @@
@@ -137,7 +137,7 @@ index 0000000000000000000000000000000000000000..9e59b7d8d0f6cfd2d15f05e38c93d87b
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/skill/ArtistSkillManager.kt b/src/main/kotlin/net/deechael/artist/skill/ArtistSkillManager.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..9927c70dfa8d807be20b0644b9f7ab7a4f4daf85
+index 0000000000000000000000000000000000000000..894457864edcce4786f7480861d632bc2fc2798c
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/skill/ArtistSkillManager.kt
 @@ -0,0 +1,72 @@
@@ -216,7 +216,7 @@ index 0000000000000000000000000000000000000000..9927c70dfa8d807be20b0644b9f7ab7a
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt b/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..f1b849bfe74f0997b5f982a0f7a9e1d9d6c39c54
+index 0000000000000000000000000000000000000000..b2d25cddd894e292078770460b025ec9a2ca548f
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt
 @@ -0,0 +1,17 @@
@@ -240,7 +240,7 @@ index 0000000000000000000000000000000000000000..f1b849bfe74f0997b5f982a0f7a9e1d9
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/skill/trigger/ArtistTrigger.kt b/src/main/kotlin/net/deechael/artist/skill/trigger/ArtistTrigger.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..fcf49c52c3e41200c05c221ca87666a92df15a65
+index 0000000000000000000000000000000000000000..84814ec549d7ef44e27478d6f3d3c96657d9fb8b
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/skill/trigger/ArtistTrigger.kt
 @@ -0,0 +1,16 @@

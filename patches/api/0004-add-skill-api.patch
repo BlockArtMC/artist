@@ -29,7 +29,7 @@ index 0ee9a1287cfd6d72438b60fa88ecc58a1e6b856c..9bd371311e1ed6c39515d9c410b82b11
  }
 diff --git a/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt b/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..4ed61ba3d70f6cda4f9252d89a2cad365c8926b4
+index 0000000000000000000000000000000000000000..2e5f99876df2d30dd5ec082be59c9749546810ae
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt
 @@ -0,0 +1,5 @@
@@ -41,7 +41,7 @@ index 0000000000000000000000000000000000000000..4ed61ba3d70f6cda4f9252d89a2cad36
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/skills/api/Skill.kt b/src/main/kotlin/net/deechael/skills/api/Skill.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..82f667d907c2d4d89db16ae351fb5d7eab3449a8
+index 0000000000000000000000000000000000000000..6517ac613ca57f3f3b75d7173585de50af83c615
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/skills/api/Skill.kt
 @@ -0,0 +1,26 @@
@@ -74,7 +74,7 @@ index 0000000000000000000000000000000000000000..82f667d907c2d4d89db16ae351fb5d7e
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/skills/api/SkillContainer.kt b/src/main/kotlin/net/deechael/skills/api/SkillContainer.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..4690c7e6ecff285136805a9105df27cf36ff714d
+index 0000000000000000000000000000000000000000..5b147e0f5cfb3729ca74c8c176021ed2086b622c
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/skills/api/SkillContainer.kt
 @@ -0,0 +1,17 @@
@@ -98,7 +98,7 @@ index 0000000000000000000000000000000000000000..4690c7e6ecff285136805a9105df27cf
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/skills/api/SkillManager.kt b/src/main/kotlin/net/deechael/skills/api/SkillManager.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..1d7828949c014fa11fa224c5a38878ba3cdf4ce4
+index 0000000000000000000000000000000000000000..19cbef4153dadb775ca0824fcc3991c0d211d937
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/skills/api/SkillManager.kt
 @@ -0,0 +1,13 @@
@@ -118,7 +118,7 @@ index 0000000000000000000000000000000000000000..1d7828949c014fa11fa224c5a38878ba
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/skills/api/SkillSlot.kt b/src/main/kotlin/net/deechael/skills/api/SkillSlot.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..ce350c6281a4e224ea1b5bc4ca1bf0f0a06e61bb
+index 0000000000000000000000000000000000000000..9fa3b5af65d85b7d5cbe6a2f14cf177563c57c8e
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/skills/api/SkillSlot.kt
 @@ -0,0 +1,9 @@

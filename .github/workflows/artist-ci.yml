@@ -49,6 +49,9 @@ jobs:
         with:
           name: artist-1.20.1
           path: "build/libs/artist-${{ env.MC_VERSION }}-${{ env.workflow }}.jar"
+      - name: Upload API to Maven Repository
+        run: |
+          ./gradlew -Dorg.gradle.jvmargs="-DnostalRepoUsername=${{ secrets.NOSTAL_REPO_USERNAME }} -DnostalRepoPassword=${{ secrets.NOSTAL_REPO_PASSWORD }}" publishArtist-apiPublicationToMavenRepository --stacktrace --no-daemon
       - name: Release Artifacts
         uses: marvinpinto/action-automatic-releases@latest
         with:

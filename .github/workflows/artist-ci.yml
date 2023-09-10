@@ -41,7 +41,7 @@ jobs:
           export GITHUB_USERNAME=Artist
           echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          ./gradlew publish
+          ./gradlew -Dorg.gradle.jvmargs="-DnostalRepoUsername=${{ secrets.NOSTAL_REPO_USERNAME }} -DnostalRepoPassword=${{ secrets.NOSTAL_REPO_PASSWORD }}" publish
       - name: Rename Jar
         run: "mv build/libs/artist-paperclip-${{ env.MC_VERSION }}-R0.1-SNAPSHOT-reobf.jar build/libs/artist-${{ env.MC_VERSION }}-${{ env.workflow }}.jar"
       - name: Upload a Build Artifact
@@ -49,9 +49,6 @@ jobs:
         with:
           name: artist-1.20.1
           path: "build/libs/artist-${{ env.MC_VERSION }}-${{ env.workflow }}.jar"
-      - name: Upload API to Maven Repository
-        run: |
-          ./gradlew -Dorg.gradle.jvmargs="-DnostalRepoUsername=${{ secrets.NOSTAL_REPO_USERNAME }} -DnostalRepoPassword=${{ secrets.NOSTAL_REPO_PASSWORD }}" publishArtist-apiPublicationToMavenRepository --stacktrace --no-daemon
       - name: Release Artifacts
         uses: marvinpinto/action-automatic-releases@latest
         with:

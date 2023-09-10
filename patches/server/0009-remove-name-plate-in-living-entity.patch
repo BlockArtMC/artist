@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Sun, 10 Sep 2023 22:23:31 +0800
+Subject: [PATCH] remove name plate in living entity
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+index a68bfaee02f012c98376ad15d1799028d20e96d6..d42a06605cd1e63e5eb7e5457a0ff4bb03173bbb 100644
+--- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
++++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+@@ -282,7 +282,6 @@ public abstract class LivingEntity extends Entity implements Attackable {
+     public net.kyori.adventure.util.TriState frictionState = net.kyori.adventure.util.TriState.NOT_SET; // Paper
+     private ArtistElementApplication elementApplication = new ArtistElementApplication(this);
+     private ArtistSkillContainer skillContainer = new ArtistSkillContainer();
+-    private Display.TextDisplay namePlate;
+ 
+     @Override
+     public float getBukkitYaw() {
+@@ -321,9 +320,6 @@ public abstract class LivingEntity extends Entity implements Attackable {
+         NbtOps dynamicopsnbt = NbtOps.INSTANCE;
+ 
+         this.brain = this.makeBrain(new Dynamic(dynamicopsnbt, (Tag) dynamicopsnbt.createMap((Map) ImmutableMap.of(dynamicopsnbt.createString("memories"), (Tag) dynamicopsnbt.emptyMap()))));
+-
+-        this.namePlate = (Display.TextDisplay) this.level().getWorld().createEntity(CraftLocation.toBukkit(this.position()), TextDisplay.class);
+-        this.namePlate.setCustomNameVisible(true);
+     }
+ 
+     public Brain<?> getBrain() {
+@@ -3128,7 +3124,6 @@ public abstract class LivingEntity extends Entity implements Attackable {
+             );
+         }
+         Vec3 pos = this.position();
+-        this.namePlate.setPos(pos.x, pos.y + ((double) this.getEyeHeight()) + 0.3, pos.z);
+         List<Component> elementTags = new ArrayList<>();
+         List<ElementType> appliedElementTypes = this.elementApplication.getAppliedElementTypes();
+         for (int i = 0; i < appliedElementTypes.size(); i++) {
+@@ -3142,7 +3137,6 @@ public abstract class LivingEntity extends Entity implements Attackable {
+         for (Component component : elementTags) {
+             finalComponent.append(component);
+         }
+-        this.namePlate.setText(PaperAdventure.asVanilla(finalComponent));
+     }
+ 
+     @Override

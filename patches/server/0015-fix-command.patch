@@ -1,0 +1,131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Tue, 19 Sep 2023 02:03:14 +0800
+Subject: [PATCH] fix: command
+
+
+diff --git a/src/main/kotlin/net/deechael/artist/command/ArtistCommandContext.kt b/src/main/kotlin/net/deechael/artist/command/ArtistCommandContext.kt
+index 37820ef69489f7e0d09d7e6479360f272bfce816..8a984982dbd679aeb550872aaa5ce4dfd5d217f1 100644
+--- a/src/main/kotlin/net/deechael/artist/command/ArtistCommandContext.kt
++++ b/src/main/kotlin/net/deechael/artist/command/ArtistCommandContext.kt
+@@ -1,7 +1,5 @@
+ package net.deechael.artist.command
+ 
+-import net.deechael.artist.command.argument.IArgumentType
+-import net.deechael.command.ArgumentType
+ import net.deechael.command.CommandContext
+ import net.minecraft.commands.CommandSourceStack
+ import org.bukkit.command.CommandSender
+@@ -12,12 +10,6 @@ class ArtistCommandContext(private val context: com.mojang.brigadier.context.Com
+         return this.context
+     }
+ 
+-    @Suppress("UNCHECKED_CAST")
+-    override fun <T, A : ArgumentType<T>> get(name: String, argumentType: A): T {
+-        argumentType as IArgumentType<*>
+-        return this.context.getArgument(name, argumentType.brigadier().javaClass) as T
+-    }
+-
+     override fun getSender(): CommandSender {
+         return this.context.source.bukkitSender
+     }
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/BoolArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/BoolArgumentType.kt
+index eb7e7cb65c8a42ac848384b877d3c0a3e9725167..9d6fadd8d27c4551ce2ef2699fab5114d530e55d 100644
+--- a/src/main/kotlin/net/deechael/artist/command/argument/BoolArgumentType.kt
++++ b/src/main/kotlin/net/deechael/artist/command/argument/BoolArgumentType.kt
+@@ -1,7 +1,9 @@
+ package net.deechael.artist.command.argument
+ 
+ import com.mojang.brigadier.arguments.BoolArgumentType
++import net.deechael.artist.command.ArtistCommandContext
+ import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
+ 
+ object BoolArgumentType : ArgumentType<Boolean>, IArgumentType<Boolean> {
+ 
+@@ -9,4 +11,9 @@ object BoolArgumentType : ArgumentType<Boolean>, IArgumentType<Boolean> {
+         return BoolArgumentType.bool()
+     }
+ 
++    override fun get(context: CommandContext, name: String): Boolean {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return BoolArgumentType.getBool(original, name)
++    }
++
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/DoubleArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/DoubleArgumentType.kt
+index 7cbb136d046268c76eb07756b18c950864c39a2f..ce5440da94ce27e51c04f7d6699052c97d3f0b09 100644
+--- a/src/main/kotlin/net/deechael/artist/command/argument/DoubleArgumentType.kt
++++ b/src/main/kotlin/net/deechael/artist/command/argument/DoubleArgumentType.kt
+@@ -1,7 +1,9 @@
+ package net.deechael.artist.command.argument
+ 
+ import com.mojang.brigadier.arguments.DoubleArgumentType
++import net.deechael.artist.command.ArtistCommandContext
+ import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
+ 
+ class DoubleArgumentType(val min: Double, val max: Double): ArgumentType<Double>, IArgumentType<Double> {
+ 
+@@ -9,4 +11,9 @@ class DoubleArgumentType(val min: Double, val max: Double): ArgumentType<Double>
+         return DoubleArgumentType.doubleArg(this.min, this.max)
+     }
+ 
++    override fun get(context: CommandContext, name: String): Double {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return DoubleArgumentType.getDouble(original, name)
++    }
++
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/FloatArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/FloatArgumentType.kt
+index 1ae56670c0d7dafcf1253866bc0a4d1d14fe18cd..288e2be9d62dbdd4b9b0d3d8f419b0f610319508 100644
+--- a/src/main/kotlin/net/deechael/artist/command/argument/FloatArgumentType.kt
++++ b/src/main/kotlin/net/deechael/artist/command/argument/FloatArgumentType.kt
+@@ -1,7 +1,9 @@
+ package net.deechael.artist.command.argument
+ 
+ import com.mojang.brigadier.arguments.FloatArgumentType
++import net.deechael.artist.command.ArtistCommandContext
+ import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
+ 
+ class FloatArgumentType(val min: Float, val max: Float): ArgumentType<Float>, IArgumentType<Float> {
+ 
+@@ -9,4 +11,9 @@ class FloatArgumentType(val min: Float, val max: Float): ArgumentType<Float>, IA
+         return FloatArgumentType.floatArg(this.min, this.max)
+     }
+ 
++    override fun get(context: CommandContext, name: String): Float {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return FloatArgumentType.getFloat(original, name)
++    }
++
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/IntArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/IntArgumentType.kt
+index 4de5dcc5de099ad131f88ebbd33e9c20b315a546..0db6dc4cc56e4f461e30ed562de32b45ed8faf91 100644
+--- a/src/main/kotlin/net/deechael/artist/command/argument/IntArgumentType.kt
++++ b/src/main/kotlin/net/deechael/artist/command/argument/IntArgumentType.kt
+@@ -1,7 +1,9 @@
+ package net.deechael.artist.command.argument
+ 
+ import com.mojang.brigadier.arguments.IntegerArgumentType
++import net.deechael.artist.command.ArtistCommandContext
+ import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
+ 
+ class IntArgumentType(val min: Int, val max: Int): ArgumentType<Int>, IArgumentType<Int> {
+ 
+@@ -9,4 +11,9 @@ class IntArgumentType(val min: Int, val max: Int): ArgumentType<Int>, IArgumentT
+         return IntegerArgumentType.integer(this.min, this.max)
+     }
+ 
++    override fun get(context: CommandContext, name: String): Int {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return IntegerArgumentType.getInteger(original, name)
++    }
++
+ }
+\ No newline at end of file

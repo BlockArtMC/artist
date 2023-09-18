@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Tue, 19 Sep 2023 01:49:33 +0800
+Subject: [PATCH] fix: command cannot invoke
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 3736abbfdd8b52186e71e8316f86b8e671ba92a0..14d640928c3b5902477b02e89e3bb6664b9a5bbd 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -12,6 +12,7 @@ import com.mojang.brigadier.StringReader;
+ import com.mojang.brigadier.exceptions.CommandSyntaxException;
+ import com.mojang.brigadier.tree.CommandNode;
+ import com.mojang.brigadier.tree.LiteralCommandNode;
++import com.mojang.brigadier.tree.RootCommandNode;
+ import com.mojang.datafixers.util.Pair;
+ import com.mojang.serialization.DynamicOps;
+ import com.mojang.serialization.Lifecycle;
+@@ -588,8 +589,10 @@ public final class CraftServer implements Server {
+     // Artist start
+     private void registerArtistCommands() {
+         Commands dispatcher = console.vanillaCommandDispatcher;
++        RootCommandNode<CommandSourceStack> rootCommand = dispatcher.getDispatcher().getRoot();
+         for (ArtistCommandWrapper command : ArtistCommandManagerImpl.INSTANCE.getCommands()) {
+             VanillaCommandWrapper wrapper = new VanillaCommandWrapper(dispatcher, command.getLiteral().toBrigadier());
++            rootCommand.addChild(wrapper.vanillaCommand);
+             this.commandMap.register(command.getPrefix(), wrapper);
+         }
+     }

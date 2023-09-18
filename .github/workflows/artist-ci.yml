@@ -42,13 +42,6 @@ jobs:
         with:
           name: artist-1.20.1
           path: "build/libs/artist-${{ env.MC_VERSION }}-${{ env.workflow }}.jar"
-      - name: Build & Publish API
-        run: |
-          echo "GITHUB_USERNAME=Artist" >> $GITHUB_ENV
-          export GITHUB_USERNAME=Artist
-          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          ./gradlew -Dorg.gradle.jvmargs="-DnostalRepoUsername=${{ secrets.NOSTAL_REPO_USERNAME }} -DnostalRepoPassword=${{ secrets.NOSTAL_REPO_PASSWORD }}" publish
       - name: Release Artifacts
         uses: marvinpinto/action-automatic-releases@latest
         with:
@@ -57,3 +50,11 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           files: "build/libs/artist-${{ env.MC_VERSION }}-${{ env.workflow }}.jar"
           prerelease: false
+      - name: Build & Publish API
+        run: |
+          echo "GITHUB_USERNAME=Artist" >> $GITHUB_ENV
+          export GITHUB_USERNAME=Artist
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          ./gradlew -Dorg.gradle.jvmargs="-DnostalRepoUsername=${{ secrets.NOSTAL_REPO_USERNAME }} -DnostalRepoPassword=${{ secrets.NOSTAL_REPO_PASSWORD }}" publish
+

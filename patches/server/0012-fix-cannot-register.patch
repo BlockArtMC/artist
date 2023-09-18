@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Tue, 19 Sep 2023 01:25:59 +0800
+Subject: [PATCH] fix: cannot register
+
+
+diff --git a/src/main/kotlin/net/deechael/artist/command/ArtistCommandManagerImpl.kt b/src/main/kotlin/net/deechael/artist/command/ArtistCommandManagerImpl.kt
+index f6543c91c414a80b8d73f123abdd14bec4e28f26..79e01673e38a2ca35813dea0176c49793531d572 100644
+--- a/src/main/kotlin/net/deechael/artist/command/ArtistCommandManagerImpl.kt
++++ b/src/main/kotlin/net/deechael/artist/command/ArtistCommandManagerImpl.kt
+@@ -9,15 +9,17 @@ object ArtistCommandManagerImpl : ArtistCommandManager{
+     private val commands = mutableListOf<ArtistCommandWrapper>()
+ 
+     override fun registerCommand(prefix: String, command: LiteralCommand) {
+-        TODO("Not yet implemented")
++        this.commands.add(ArtistCommandWrapper(prefix, command as LiteralCommandImpl))
+     }
+ 
+     override fun createCommand(name: String, literal: LiteralCommand.() -> Unit): LiteralCommand {
+-        TODO("Not yet implemented")
++        val command = LiteralCommandImpl(name)
++        command.apply(literal)
++        return command
+     }
+ 
+     override fun getArgumentManager(): ArgumentManager {
+-        TODO("Not yet implemented")
++        return ArtistArgumentManager
+     }
+ 
+     fun getCommands(): List<ArtistCommandWrapper> {

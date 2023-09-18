@@ -1,0 +1,193 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Tue, 19 Sep 2023 00:08:36 +0800
+Subject: [PATCH] feat: protocol manager api
+
+
+diff --git a/src/main/java/org/bukkit/Bukkit.java b/src/main/java/org/bukkit/Bukkit.java
+index c36aca9bb5a0f8a67aa84a690a010445bd7712af..80afaca0f316edfdf65e1bb341c18843094bfce6 100644
+--- a/src/main/java/org/bukkit/Bukkit.java
++++ b/src/main/java/org/bukkit/Bukkit.java
+@@ -15,6 +15,7 @@ import java.util.UUID;
+ import java.util.function.Consumer;
+ import java.util.logging.Logger;
+ 
++import net.deechael.protocol.ProtocolManager;
+ import net.deechael.elements.api.ElementManager;
+ import net.deechael.skills.api.SkillManager;
+ import org.bukkit.Warning.WarningState;
+@@ -2767,6 +2768,10 @@ public final class Bukkit {
+     public static SkillManager getSkillManager() {
+         return server.getSkillManager();
+     }
++
++    public static ProtocolManager getProtocolManager() {
++        return server.getProtocolManager();
++    }
+     // Artist end
+ 
+     @NotNull
+diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
+index b0904d838ef2d5690d5e0d1a26ea15895f480ff6..f9b9ac7edfa02a063d10f60da67552aec25546b1 100644
+--- a/src/main/java/org/bukkit/Server.java
++++ b/src/main/java/org/bukkit/Server.java
+@@ -15,6 +15,7 @@ import java.util.UUID;
+ import java.util.function.Consumer;
+ import java.util.logging.Logger;
+ 
++import net.deechael.protocol.ProtocolManager;
+ import net.deechael.elements.api.ElementManager;
+ import net.deechael.skills.api.SkillManager;
+ import org.bukkit.Warning.WarningState;
+@@ -2416,5 +2417,7 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
+     ElementManager getElementManager();
+ 
+     SkillManager getSkillManager();
++
++    ProtocolManager getProtocolManager();
+     // Artist end
+ }
+diff --git a/src/main/kotlin/net/deechael/protocol/ProtocolListener.kt b/src/main/kotlin/net/deechael/protocol/ProtocolListener.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..ed5084585980377c7dce68f4fe817de84b2c82cd
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/protocol/ProtocolListener.kt
+@@ -0,0 +1,12 @@
++package net.deechael.protocol
++
++import net.deechael.protocol.packet.Packet
++import org.bukkit.entity.Player
++
++interface ProtocolListener {
++
++    fun sending(player: Player, packet: Packet): Packet?
++
++    fun receiving(player: Player, packet: Packet): Packet?
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/protocol/ProtocolManager.kt b/src/main/kotlin/net/deechael/protocol/ProtocolManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..3994fee8723ca24ae6acb78f63b954d580b63f85
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/protocol/ProtocolManager.kt
+@@ -0,0 +1,11 @@
++package net.deechael.protocol
++
++import org.bukkit.plugin.Plugin
++
++interface ProtocolManager {
++
++    fun registerListener(plugin: Plugin, listener: ProtocolListener)
++
++    fun unregisterAllListener(plugin: Plugin)
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/protocol/packet/Packet.kt b/src/main/kotlin/net/deechael/protocol/packet/Packet.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..2f69d63103735ec40c101362c0906c0abda088d2
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/protocol/packet/Packet.kt
+@@ -0,0 +1,9 @@
++package net.deechael.protocol.packet
++
++interface Packet {
++
++    fun original(): Any
++
++    fun cast(): Any
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/protocol/packet/S2CSetActionBarPacket.kt b/src/main/kotlin/net/deechael/protocol/packet/S2CSetActionBarPacket.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..2871cd90acae51f52ed2a272876c3d45ebe36418
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/protocol/packet/S2CSetActionBarPacket.kt
+@@ -0,0 +1,10 @@
++package net.deechael.protocol.packet
++
++import net.kyori.adventure.text.Component
++
++interface S2CSetActionBarPacket : Packet {
++
++    fun adventureContent(): Component
++
++    fun adventureContent(component: Component)
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/protocol/packet/S2CSetSubtitlePacket.kt b/src/main/kotlin/net/deechael/protocol/packet/S2CSetSubtitlePacket.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..6e2a9de9246c70bcaa55ba29d7cc84ac0d65b86b
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/protocol/packet/S2CSetSubtitlePacket.kt
+@@ -0,0 +1,10 @@
++package net.deechael.protocol.packet
++
++import net.kyori.adventure.text.Component
++
++interface S2CSetSubtitlePacket : Packet {
++
++    fun adventureContent(): Component
++
++    fun adventureContent(component: Component)
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/protocol/packet/S2CSetTitlePacket.kt b/src/main/kotlin/net/deechael/protocol/packet/S2CSetTitlePacket.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..9c0c12bd2ddeebd74fc9e3c214f4b0e38a2d004c
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/protocol/packet/S2CSetTitlePacket.kt
+@@ -0,0 +1,10 @@
++package net.deechael.protocol.packet
++
++import net.kyori.adventure.text.Component
++
++interface S2CSetTitlePacket : Packet {
++
++    fun adventureContent(): Component
++
++    fun adventureContent(component: Component)
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/protocol/packet/S2CSystemChatPacket.kt b/src/main/kotlin/net/deechael/protocol/packet/S2CSystemChatPacket.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..eac65c6533ec7c02a6ea5b6a7f00c5bb484e9b58
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/protocol/packet/S2CSystemChatPacket.kt
+@@ -0,0 +1,11 @@
++package net.deechael.protocol.packet
++
++import net.kyori.adventure.text.Component
++
++interface S2CSystemChatPacket : Packet {
++
++    fun adventureContent(): Component
++
++    fun adventureContent(component: Component)
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/protocol/packet/S2CTabListPacket.kt b/src/main/kotlin/net/deechael/protocol/packet/S2CTabListPacket.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..87d8667a63c3c57fb1244ca2fe754a064a9e65aa
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/protocol/packet/S2CTabListPacket.kt
+@@ -0,0 +1,15 @@
++package net.deechael.protocol.packet
++
++import net.kyori.adventure.text.Component
++
++interface S2CTabListPacket : Packet {
++
++    fun headerContent(): Component
++
++    fun headerContent(component: Component)
++
++    fun footerContent(): Component
++
++    fun footerContent(component: Component)
++
++}
+\ No newline at end of file

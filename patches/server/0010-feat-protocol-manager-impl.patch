@@ -1,0 +1,484 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Tue, 19 Sep 2023 00:08:51 +0800
+Subject: [PATCH] feat: protocol manager impl
+
+
+diff --git a/src/main/java/net/deechael/artist/protocol/ArtistPacketHandler.java b/src/main/java/net/deechael/artist/protocol/ArtistPacketHandler.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..fab21ae7db9c45d8a42cc40e404f3afc4789a7c0
+--- /dev/null
++++ b/src/main/java/net/deechael/artist/protocol/ArtistPacketHandler.java
+@@ -0,0 +1,48 @@
++package net.deechael.artist.protocol;
++
++import io.netty.channel.ChannelDuplexHandler;
++import io.netty.channel.ChannelHandlerContext;
++import io.netty.channel.ChannelPromise;
++import net.minecraft.server.level.ServerPlayer;
++
++public class ArtistPacketHandler extends ChannelDuplexHandler {
++
++    private final ServerPlayer player;
++
++    public ArtistPacketHandler(ServerPlayer player) {
++        this.player = player;
++    }
++
++    @Override
++    public void write(ChannelHandlerContext ctx, Object packet, ChannelPromise promise) throws Exception {
++        Object newPacket;
++        try {
++            newPacket = ArtistProtocolManager.INSTANCE.send(player.getBukkitEntity(), packet);
++        } catch (OutOfMemoryError error) {
++            throw error;
++        } catch (Throwable throwable) {
++            throwable.printStackTrace();
++            super.write(ctx, packet, promise);
++            return;
++        }
++        if (newPacket != null)
++            super.write(ctx, newPacket, promise);
++    }
++
++    @Override
++    public void channelRead(ChannelHandlerContext ctx, Object packet) throws Exception {
++        Object newPacket;
++        try {
++            newPacket = ArtistProtocolManager.INSTANCE.receive(player.getBukkitEntity(), packet);
++        } catch (OutOfMemoryError error) {
++            // Out of memory, re-throw and return immediately
++            throw error;
++        } catch (Throwable throwable) {
++            throwable.printStackTrace();
++            super.channelRead(ctx, packet);
++            return;
++        }
++        if (newPacket != null)
++            super.channelRead(ctx, newPacket);
++    }
++}
+diff --git a/src/main/java/net/minecraft/network/Connection.java b/src/main/java/net/minecraft/network/Connection.java
+index cf20f0983fc25b26cf92b9d3a28746b1909fc56b..59235711728dac06e9758eaedc334dced02914cf 100644
+--- a/src/main/java/net/minecraft/network/Connection.java
++++ b/src/main/java/net/minecraft/network/Connection.java
+@@ -21,7 +21,6 @@ import io.netty.channel.epoll.EpollSocketChannel;
+ import io.netty.channel.local.LocalChannel;
+ import io.netty.channel.local.LocalServerChannel;
+ import io.netty.channel.nio.NioEventLoopGroup;
+-import io.netty.channel.socket.SocketChannel;
+ import io.netty.channel.socket.nio.NioSocketChannel;
+ import io.netty.handler.timeout.ReadTimeoutHandler;
+ import io.netty.handler.timeout.TimeoutException;
+@@ -31,7 +30,7 @@ import java.net.SocketAddress;
+ import java.util.Queue;
+ import java.util.concurrent.RejectedExecutionException;
+ import javax.annotation.Nullable;
+-import javax.crypto.Cipher;
++
+ import net.minecraft.Util;
+ import net.minecraft.network.chat.Component;
+ import net.minecraft.network.chat.MutableComponent;
+@@ -62,7 +61,7 @@ public class Connection extends SimpleChannelInboundHandler<Packet<?>> {
+     public static final Marker PACKET_SENT_MARKER = (Marker) Util.make(MarkerFactory.getMarker("PACKET_SENT"), (marker) -> {
+         marker.add(Connection.PACKET_MARKER);
+     });
+-    public static final AttributeKey<ConnectionProtocol> ATTRIBUTE_PROTOCOL = AttributeKey.valueOf("protocol");
++    public static final AttributeKey<ConnectionProtocol> ATTRIBUTE_PROTOCOL = AttributeKey.valueOf("net/deechael/protocol");
+     public static final LazyLoadedValue<NioEventLoopGroup> NETWORK_WORKER_GROUP = new LazyLoadedValue<>(() -> {
+         return new NioEventLoopGroup(0, (new ThreadFactoryBuilder()).setNameFormat("Netty Client IO #%d").setDaemon(true).setUncaughtExceptionHandler(new net.minecraft.DefaultUncaughtExceptionHandlerWithName(LOGGER)).build()); // Paper
+     });
+diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+index 3c0651fa5a5db880202c9a3805a6455269c5f16d..2396560f3a6e5d276ecca78b73e01250f5616edf 100644
+--- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
++++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+@@ -29,6 +29,8 @@ import java.util.function.UnaryOperator;
+ import java.util.stream.Collectors;
+ import java.util.stream.Stream;
+ import javax.annotation.Nullable;
++
++import net.deechael.artist.protocol.ArtistPacketHandler;
+ import net.minecraft.ChatFormatting;
+ import net.minecraft.CrashReport;
+ import net.minecraft.CrashReportCategory;
+@@ -323,6 +325,10 @@ public class ServerGamePacketListenerImpl implements ServerPlayerConnection, Tic
+         this.chatMessageChain = new FutureChain(server.chatExecutor); // CraftBukkit - async chat
+         // CraftBukkit start - add fields and methods
+         this.cserver = server.server;
++
++        // Artist start
++        this.connection.channel.pipeline().addBefore("packet_handler", "artist", new ArtistPacketHandler(this.player));
++        // Artist end
+     }
+ 
+     private final org.bukkit.craftbukkit.CraftServer cserver;
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 05f0428f2ac8f6d2e9fc83a6d03f2af96fd4e8f9..2af66a1b5f6dc0e4289534168b3591d451913f76 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -46,7 +46,9 @@ import java.util.stream.Collectors;
+ import javax.imageio.ImageIO;
+ 
+ import net.deechael.artist.element.ArtistElementManager;
++import net.deechael.artist.protocol.ArtistProtocolManager;
+ import net.deechael.artist.skill.ArtistSkillManager;
++import net.deechael.protocol.ProtocolManager;
+ import net.minecraft.advancements.Advancement;
+ import net.minecraft.commands.CommandSourceStack;
+ import net.minecraft.commands.Commands;
+@@ -3162,4 +3164,9 @@ public final class CraftServer implements Server {
+         return this.skillManager;
+     }
+ 
++    @Override
++    public ProtocolManager getProtocolManager() {
++        return ArtistProtocolManager.INSTANCE;
++    }
++
+ }
+diff --git a/src/main/kotlin/net/deechael/artist/protocol/ArtistProtocolManager.kt b/src/main/kotlin/net/deechael/artist/protocol/ArtistProtocolManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..49b492018975368994a3e983c07ea08d4db9d2bf
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/protocol/ArtistProtocolManager.kt
+@@ -0,0 +1,82 @@
++package net.deechael.artist.protocol
++
++import net.deechael.artist.protocol.packet.*
++import net.deechael.protocol.ProtocolListener
++import net.deechael.protocol.ProtocolManager
++import net.deechael.protocol.packet.Packet
++import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket
++import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket
++import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket
++import net.minecraft.network.protocol.game.ClientboundSystemChatPacket
++import net.minecraft.network.protocol.game.ClientboundTabListPacket
++import org.bukkit.entity.Player
++import org.bukkit.plugin.Plugin
++import java.lang.RuntimeException
++
++internal object PLACEHOLDER: Packet {
++    override fun original(): Any {
++        throw RuntimeException()
++    }
++
++    override fun cast(): Any {
++        throw RuntimeException()
++    }
++}
++
++object ArtistProtocolManager : ProtocolManager {
++
++    private val listeners = mutableMapOf<Plugin, MutableList<ProtocolListener>>()
++
++    override fun registerListener(plugin: Plugin, listener: ProtocolListener) {
++        this.listeners.getOrPut(plugin) {
++            mutableListOf()
++        }.add(listener)
++    }
++
++    override fun unregisterAllListener(plugin: Plugin) {
++        this.listeners.remove(plugin)
++    }
++
++    fun send(player: Player, packet: Any): Any? {
++        var wrappedPacket: Packet? = when (packet) {
++            is ClientboundSystemChatPacket -> {
++                S2CSystemChatPacketImpl(packet)
++            }
++
++            is ClientboundSetActionBarTextPacket -> {
++                S2CSetActionBarPacketImpl(packet)
++            }
++
++            is ClientboundSetTitleTextPacket -> {
++                S2CSetTitlePacketImpl(packet)
++            }
++
++            is ClientboundSetSubtitleTextPacket -> {
++                S2CSetSubtitlePacketImpl(packet)
++            }
++
++            is ClientboundTabListPacket -> {
++                S2CTabListPacketImpl(packet)
++            }
++
++            else -> {
++                PLACEHOLDER
++            }
++        }
++        if (wrappedPacket is PLACEHOLDER)
++            return packet
++        for (listener in mutableListOf<ProtocolListener>().apply {
++            this@ArtistProtocolManager.listeners.values.forEach(this::addAll)
++        }) {
++            if (wrappedPacket == null)
++                break
++            wrappedPacket = listener.sending(player, wrappedPacket)
++        }
++        return wrappedPacket?.cast()
++    }
++
++    fun receive(player: Player, packet: Any): Any? {
++        return packet
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/protocol/packet/S2CSetActionBarPacketImpl.kt b/src/main/kotlin/net/deechael/artist/protocol/packet/S2CSetActionBarPacketImpl.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..98f0462d4292af046179861ee536005f305e4fec
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/protocol/packet/S2CSetActionBarPacketImpl.kt
+@@ -0,0 +1,40 @@
++package net.deechael.artist.protocol.packet
++
++import io.papermc.paper.adventure.PaperAdventure
++import net.deechael.protocol.packet.S2CSetActionBarPacket
++import net.kyori.adventure.text.Component
++import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket
++
++class S2CSetActionBarPacketImpl(val original: ClientboundSetActionBarTextPacket) : S2CSetActionBarPacket {
++
++    private var component: Component
++    private var modified: Boolean = false
++
++    init {
++        this.component = original.`adventure$text` ?: PaperAdventure.asAdventure(this.original.text)
++    }
++
++    override fun adventureContent(): Component {
++        return this.component
++    }
++
++    override fun adventureContent(component: Component) {
++        this.component = component
++        this.modified = true
++    }
++
++    override fun original(): Any {
++        return this.original
++    }
++
++    override fun cast(): Any {
++        return if (this.modified) {
++            val packet = ClientboundSetActionBarTextPacket(net.minecraft.network.chat.Component.empty())
++            packet.`adventure$text` = this.component
++            packet
++        } else {
++            this.original
++        }
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/protocol/packet/S2CSetSubtitlePacketImpl.kt b/src/main/kotlin/net/deechael/artist/protocol/packet/S2CSetSubtitlePacketImpl.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..230b0c785f182fcc2267e9c812655447d834a7fd
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/protocol/packet/S2CSetSubtitlePacketImpl.kt
+@@ -0,0 +1,40 @@
++package net.deechael.artist.protocol.packet
++
++import io.papermc.paper.adventure.PaperAdventure
++import net.deechael.protocol.packet.S2CSetSubtitlePacket
++import net.kyori.adventure.text.Component
++import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket
++
++class S2CSetSubtitlePacketImpl(val original: ClientboundSetSubtitleTextPacket) : S2CSetSubtitlePacket {
++
++    private var component: Component
++    private var modified: Boolean = false
++
++    init {
++        this.component = original.`adventure$text` ?: PaperAdventure.asAdventure(this.original.text)
++    }
++
++    override fun adventureContent(): Component {
++        return this.component
++    }
++
++    override fun adventureContent(component: Component) {
++        this.component = component
++        this.modified = true
++    }
++
++    override fun original(): Any {
++        return this.original
++    }
++
++    override fun cast(): Any {
++        return if (this.modified) {
++            val packet = ClientboundSetSubtitleTextPacket(net.minecraft.network.chat.Component.empty())
++            packet.`adventure$text` = this.component
++            packet
++        } else {
++            this.original
++        }
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/protocol/packet/S2CSetTitlePacketImpl.kt b/src/main/kotlin/net/deechael/artist/protocol/packet/S2CSetTitlePacketImpl.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..cc689634ebfa8988c6f5f031644eecda82f1902a
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/protocol/packet/S2CSetTitlePacketImpl.kt
+@@ -0,0 +1,40 @@
++package net.deechael.artist.protocol.packet
++
++import io.papermc.paper.adventure.PaperAdventure
++import net.deechael.protocol.packet.S2CSetTitlePacket
++import net.kyori.adventure.text.Component
++import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket
++
++class S2CSetTitlePacketImpl(val original: ClientboundSetTitleTextPacket) : S2CSetTitlePacket {
++
++    private var component: Component
++    private var modified: Boolean = false
++
++    init {
++        this.component = original.`adventure$text` ?: PaperAdventure.asAdventure(this.original.text)
++    }
++
++    override fun adventureContent(): Component {
++        return this.component
++    }
++
++    override fun adventureContent(component: Component) {
++        this.component = component
++        this.modified = true
++    }
++
++    override fun original(): Any {
++        return this.original
++    }
++
++    override fun cast(): Any {
++        return if (this.modified) {
++            val packet = ClientboundSetTitleTextPacket(net.minecraft.network.chat.Component.empty())
++            packet.`adventure$text` = this.component
++            packet
++        } else {
++            this.original
++        }
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/protocol/packet/S2CSystemChatPacketImpl.kt b/src/main/kotlin/net/deechael/artist/protocol/packet/S2CSystemChatPacketImpl.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..b3767bb5e79b583e6b2e091e2b6bf583b84ea22b
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/protocol/packet/S2CSystemChatPacketImpl.kt
+@@ -0,0 +1,41 @@
++package net.deechael.artist.protocol.packet
++
++import io.papermc.paper.adventure.PaperAdventure
++import net.deechael.protocol.packet.S2CSetTitlePacket
++import net.kyori.adventure.text.Component
++import net.minecraft.network.protocol.game.ClientboundSystemChatPacket
++
++class S2CSystemChatPacketImpl(val original: ClientboundSystemChatPacket) : S2CSetTitlePacket {
++
++    private var component: Component
++    private var modified: Boolean = false
++
++    init {
++        this.component = original.`adventure$content` ?: if (this.original.content != null)
++            Component.text(this.original.content!!)
++        else
++            Component.empty()
++    }
++
++    override fun adventureContent(): Component {
++        return this.component
++    }
++
++    override fun adventureContent(component: Component) {
++        this.component = component
++        this.modified = true
++    }
++
++    override fun original(): Any {
++        return this.original
++    }
++
++    override fun cast(): Any {
++        return if (this.modified) {
++            ClientboundSystemChatPacket(this.component, this.original.overlay)
++        } else {
++            this.original
++        }
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/protocol/packet/S2CTabListPacketImpl.kt b/src/main/kotlin/net/deechael/artist/protocol/packet/S2CTabListPacketImpl.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..4ea7c69673f373e20a0fe6fb355e9052b664d5c6
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/protocol/packet/S2CTabListPacketImpl.kt
+@@ -0,0 +1,61 @@
++package net.deechael.artist.protocol.packet
++
++import io.papermc.paper.adventure.PaperAdventure
++import net.deechael.protocol.packet.S2CTabListPacket
++import net.kyori.adventure.text.Component
++import net.minecraft.network.protocol.game.ClientboundTabListPacket
++
++class S2CTabListPacketImpl(val original: ClientboundTabListPacket) : S2CTabListPacket {
++
++    private var header: Component
++    private var footer: Component
++    private var modifiedHeader: Boolean = false
++    private var modifiedFooter: Boolean = false
++
++    init {
++        this.header = this.original.`adventure$header` ?: PaperAdventure.asAdventure(this.original.header)
++        this.footer = this.original.`adventure$footer` ?: PaperAdventure.asAdventure(this.original.footer)
++    }
++
++    override fun headerContent(): Component {
++        return this.header
++    }
++
++    override fun headerContent(component: Component) {
++        this.header = component
++        this.modifiedHeader = true
++    }
++
++    override fun footerContent(): Component {
++        return this.footer
++    }
++
++    override fun footerContent(component: Component) {
++        this.footer = footer
++        this.modifiedFooter = true
++    }
++
++    override fun original(): Any {
++        return this.original
++    }
++
++    override fun cast(): Any {
++        return if (this.modifiedHeader || this.modifiedFooter) {
++            val packet = ClientboundTabListPacket(net.minecraft.network.chat.Component.empty(), net.minecraft.network.chat.Component.empty())
++            if (this.modifiedHeader) {
++                packet.`adventure$header` = header
++            } else {
++                packet.`adventure$header` = PaperAdventure.asAdventure(this.original.header)
++            }
++            if (this.modifiedFooter) {
++                packet.`adventure$footer` = footer
++            } else {
++                packet.`adventure$footer` = PaperAdventure.asAdventure(this.original.footer)
++            }
++            packet
++        } else {
++            this.original
++        }
++    }
++
++}
+\ No newline at end of file

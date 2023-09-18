@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Tue, 19 Sep 2023 02:04:28 +0800
+Subject: [PATCH] fix: command
+
+
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/StringArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/StringArgumentType.kt
+index 35287c55a7573cf7f1bda127e5c545c633778069..1257e3f22316ec7efc52e292df652c2cd44a2c3e 100644
+--- a/src/main/kotlin/net/deechael/artist/command/argument/StringArgumentType.kt
++++ b/src/main/kotlin/net/deechael/artist/command/argument/StringArgumentType.kt
+@@ -1,7 +1,9 @@
+ package net.deechael.artist.command.argument
+ 
+ import com.mojang.brigadier.arguments.StringArgumentType
++import net.deechael.artist.command.ArtistCommandContext
+ import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
+ 
+ object StringArgumentType : ArgumentType<String>, IArgumentType<String> {
+ 
+@@ -9,4 +11,9 @@ object StringArgumentType : ArgumentType<String>, IArgumentType<String> {
+         return StringArgumentType.string()
+     }
+ 
++    override fun get(context: CommandContext, name: String): String {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return StringArgumentType.getString(original, name)
++    }
++
+ }
+\ No newline at end of file

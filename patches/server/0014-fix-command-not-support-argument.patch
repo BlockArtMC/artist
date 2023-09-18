@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Tue, 19 Sep 2023 01:56:34 +0800
+Subject: [PATCH] fix: command not support argument
+
+
+diff --git a/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt b/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt
+index 7e636f3127c3743b74938a64c7dfd9b83d215424..fe7d6ebe1f1591eb26cc5744d30ff5d010f70540 100644
+--- a/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt
++++ b/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt
+@@ -38,6 +38,7 @@ class ArgumentCommandImpl(private val name: String, private val argumentType: Ar
+         argument(command) {
+             argumentType.get(this, name)
+         }
++        this.children.add(command)
+     }
+ 
+     override fun Executor(context: CommandContext.() -> Unit) {
+diff --git a/src/main/kotlin/net/deechael/artist/command/LiteralCommandImpl.kt b/src/main/kotlin/net/deechael/artist/command/LiteralCommandImpl.kt
+index 1473291a0cf5bbd8f9a5fcda3aed2aa7cf9d4730..0f9411ff2c3400f4da503a4cd499989b3764d15e 100644
+--- a/src/main/kotlin/net/deechael/artist/command/LiteralCommandImpl.kt
++++ b/src/main/kotlin/net/deechael/artist/command/LiteralCommandImpl.kt
+@@ -32,6 +32,7 @@ class LiteralCommandImpl(private val name: String) : CommandImpl(), LiteralComma
+         argument(command) {
+             argumentType.get(this, name)
+         }
++        this.children.add(command)
+     }
+ 
+     override fun Executor(context: CommandContext.() -> Unit) {

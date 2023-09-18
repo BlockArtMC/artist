@@ -1,0 +1,196 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Tue, 19 Sep 2023 01:22:33 +0800
+Subject: [PATCH] feat: command api
+
+
+diff --git a/src/main/java/org/bukkit/Bukkit.java b/src/main/java/org/bukkit/Bukkit.java
+index 80afaca0f316edfdf65e1bb341c18843094bfce6..cd8b714537adbe4f2c366ffa88d4c52a1e308b9e 100644
+--- a/src/main/java/org/bukkit/Bukkit.java
++++ b/src/main/java/org/bukkit/Bukkit.java
+@@ -15,6 +15,7 @@ import java.util.UUID;
+ import java.util.function.Consumer;
+ import java.util.logging.Logger;
+ 
++import net.deechael.command.ArtistCommandManager;
+ import net.deechael.protocol.ProtocolManager;
+ import net.deechael.elements.api.ElementManager;
+ import net.deechael.skills.api.SkillManager;
+@@ -2772,6 +2773,10 @@ public final class Bukkit {
+     public static ProtocolManager getProtocolManager() {
+         return server.getProtocolManager();
+     }
++
++    public static ArtistCommandManager getArtistCommandManager() {
++        return server.getArtistCommandManager();
++    }
+     // Artist end
+ 
+     @NotNull
+diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
+index f9b9ac7edfa02a063d10f60da67552aec25546b1..8e2d2b2fee99c797b75c28337b98ad73b3466dcd 100644
+--- a/src/main/java/org/bukkit/Server.java
++++ b/src/main/java/org/bukkit/Server.java
+@@ -15,6 +15,7 @@ import java.util.UUID;
+ import java.util.function.Consumer;
+ import java.util.logging.Logger;
+ 
++import net.deechael.command.ArtistCommandManager;
+ import net.deechael.protocol.ProtocolManager;
+ import net.deechael.elements.api.ElementManager;
+ import net.deechael.skills.api.SkillManager;
+@@ -2419,5 +2420,7 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
+     SkillManager getSkillManager();
+ 
+     ProtocolManager getProtocolManager();
++
++    ArtistCommandManager getArtistCommandManager();
+     // Artist end
+ }
+diff --git a/src/main/kotlin/net/deechael/command/ArgumentCommand.kt b/src/main/kotlin/net/deechael/command/ArgumentCommand.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..ea1116b16ad76e375ff6a770b35cef95bbb6b3a8
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/command/ArgumentCommand.kt
+@@ -0,0 +1,7 @@
++package net.deechael.command
++
++interface ArgumentCommand : Command {
++
++    fun Suggestion(suggestion: SuggestionProvider.() -> Unit)
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/command/ArgumentManager.kt b/src/main/kotlin/net/deechael/command/ArgumentManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..5377dca914cbb47eeedfbb62bd24b62e2b495a7f
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/command/ArgumentManager.kt
+@@ -0,0 +1,21 @@
++package net.deechael.command
++
++import org.bukkit.entity.Player
++
++interface ArgumentManager {
++
++    fun string(): ArgumentType<String>
++
++    fun bool(): ArgumentType<Boolean>
++
++    fun integer(min: Int = Int.MIN_VALUE, max: Int = Int.MIN_VALUE): ArgumentType<Int>
++
++    fun double(min: Double = Double.MIN_VALUE, max: Double = Double.MAX_VALUE): ArgumentType<Double>
++
++    fun float(min: Float = Float.MIN_VALUE, max: Float = Float.MIN_VALUE): ArgumentType<Float>
++
++    fun singlePlayer(): ArgumentType<Player>
++
++    fun players(): ArgumentType<List<Player>>
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/command/ArgumentType.kt b/src/main/kotlin/net/deechael/command/ArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..7bfc3cd49d27acb7326a4738bdac49fccddd2b64
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/command/ArgumentType.kt
+@@ -0,0 +1,9 @@
++package net.deechael.command
++
++interface ArgumentType<T> {
++
++    fun get(context: CommandContext, name: String): T {
++        return context.get(name, this)
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/command/ArtistCommandManager.kt b/src/main/kotlin/net/deechael/command/ArtistCommandManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..8f4519a9c85692830809b57fedcbec20463939c4
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/command/ArtistCommandManager.kt
+@@ -0,0 +1,12 @@
++package net.deechael.command
++
++interface ArtistCommandManager {
++
++    fun registerCommand(prefix: String, command: LiteralCommand)
++
++    fun createCommand(name: String, literal: LiteralCommand.() -> Unit): LiteralCommand
++
++    fun getArgumentManager(): ArgumentManager
++
++}
++
+diff --git a/src/main/kotlin/net/deechael/command/Command.kt b/src/main/kotlin/net/deechael/command/Command.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..68fab6c9e7dbe374b2faf27e6c90da72f3397709
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/command/Command.kt
+@@ -0,0 +1,15 @@
++package net.deechael.command
++
++import org.bukkit.command.CommandSender
++
++interface Command {
++
++    fun Requirement(requirement: (CommandSender) -> Boolean)
++
++    fun Literal(name: String, literal: LiteralCommand.() -> Unit)
++
++    fun <T, A: ArgumentType<T>> Argument(name: String, argumentType: A, argument: ArgumentCommand.(CommandContext.() -> T) -> Unit)
++
++    fun Executor(context: CommandContext.() -> Unit)
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/command/CommandContext.kt b/src/main/kotlin/net/deechael/command/CommandContext.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..d8fe8a681110207eef989a08f9dd57f73c5cee1e
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/command/CommandContext.kt
+@@ -0,0 +1,11 @@
++package net.deechael.command
++
++import org.bukkit.command.CommandSender
++
++interface CommandContext {
++
++    fun <T, A : ArgumentType<T>> get(name: String, argumentType: A): T
++
++    fun getSender(): CommandSender
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/command/LiteralCommand.kt b/src/main/kotlin/net/deechael/command/LiteralCommand.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..240deec16099f96bb0968776291294068b418e9b
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/command/LiteralCommand.kt
+@@ -0,0 +1,5 @@
++package net.deechael.command
++
++interface LiteralCommand : Command {
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/command/SuggestionProvider.kt b/src/main/kotlin/net/deechael/command/SuggestionProvider.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..fb42a26f6e4ac9624f7d5b98617408acfe5c9ca6
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/command/SuggestionProvider.kt
+@@ -0,0 +1,12 @@
++package net.deechael.command
++
++
++interface SuggestionProvider {
++
++    fun getContext(): CommandContext
++
++    fun suggest(int: Int)
++
++    fun suggest(string: String)
++
++}
+\ No newline at end of file

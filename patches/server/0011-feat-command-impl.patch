@@ -1,0 +1,549 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Tue, 19 Sep 2023 01:22:41 +0800
+Subject: [PATCH] feat: command impl
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 2af66a1b5f6dc0e4289534168b3591d451913f76..3736abbfdd8b52186e71e8316f86b8e671ba92a0 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -45,9 +45,14 @@ import java.util.logging.Logger;
+ import java.util.stream.Collectors;
+ import javax.imageio.ImageIO;
+ 
++import net.deechael.artist.command.ArtistCommandManagerImpl;
++import net.deechael.artist.command.ArtistCommandWrapper;
++import net.deechael.artist.command.LiteralCommandImpl;
+ import net.deechael.artist.element.ArtistElementManager;
+ import net.deechael.artist.protocol.ArtistProtocolManager;
+ import net.deechael.artist.skill.ArtistSkillManager;
++import net.deechael.command.ArtistCommandManager;
++import net.deechael.command.LiteralCommand;
+ import net.deechael.protocol.ProtocolManager;
+ import net.minecraft.advancements.Advancement;
+ import net.minecraft.commands.CommandSourceStack;
+@@ -566,6 +571,7 @@ public final class CraftServer implements Server {
+             this.commandMap.setFallbackCommands();
+             this.setVanillaCommands(false);
+             // Spigot end
++            this.registerArtistCommands(); // Artist
+             this.commandMap.registerServerAliases();
+             DefaultPermissions.registerCorePermissions();
+             CraftDefaultPermissions.registerCorePermissions();
+@@ -579,6 +585,16 @@ public final class CraftServer implements Server {
+         this.pluginManager.disablePlugins();
+     }
+ 
++    // Artist start
++    private void registerArtistCommands() {
++        Commands dispatcher = console.vanillaCommandDispatcher;
++        for (ArtistCommandWrapper command : ArtistCommandManagerImpl.INSTANCE.getCommands()) {
++            VanillaCommandWrapper wrapper = new VanillaCommandWrapper(dispatcher, command.getLiteral().toBrigadier());
++            this.commandMap.register(command.getPrefix(), wrapper);
++        }
++    }
++    // Artist end
++
+     private void setVanillaCommands(boolean first) { // Spigot
+         Commands dispatcher = console.vanillaCommandDispatcher;
+ 
+@@ -3169,4 +3185,9 @@ public final class CraftServer implements Server {
+         return ArtistProtocolManager.INSTANCE;
+     }
+ 
++    @Override
++    public ArtistCommandManager getArtistCommandManager() {
++        return ArtistCommandManagerImpl.INSTANCE;
++    }
++
+ }
+diff --git a/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt b/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..7e636f3127c3743b74938a64c7dfd9b83d215424
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt
+@@ -0,0 +1,74 @@
++package net.deechael.artist.command
++
++import com.mojang.brigadier.tree.CommandNode
++import net.deechael.artist.command.argument.IArgumentType
++import net.deechael.command.*
++import net.minecraft.commands.CommandSourceStack
++import net.minecraft.commands.Commands
++import org.bukkit.command.CommandSender
++
++class ArgumentCommandImpl(private val name: String, private val argumentType: ArgumentType<*>): CommandImpl(), ArgumentCommand {
++
++    private var suggestion: SuggestionProvider.() -> Unit = {}
++    private var requirement: (CommandSender) -> Boolean = { true }
++    private var executor: (CommandContext.() -> Unit)? = null
++
++    private val children = mutableListOf<CommandImpl>()
++
++    override fun Suggestion(suggestion: SuggestionProvider.() -> Unit) {
++        this.suggestion = suggestion
++    }
++
++    override fun Requirement(requirement: (CommandSender) -> Boolean) {
++        this.requirement = requirement;
++    }
++
++    override fun Literal(name: String, literal: LiteralCommand.() -> Unit) {
++        val command = LiteralCommandImpl(name)
++        command.apply(literal)
++        this.children.add(command)
++    }
++
++    override fun <T, A : ArgumentType<T>> Argument(
++        name: String,
++        argumentType: A,
++        argument: ArgumentCommand.(CommandContext.() -> T) -> Unit
++    ) {
++        val command = ArgumentCommandImpl(name, argumentType)
++        argument(command) {
++            argumentType.get(this, name)
++        }
++    }
++
++    override fun Executor(context: CommandContext.() -> Unit) {
++        this.executor = context
++    }
++
++    override fun toBrigadier(): CommandNode<CommandSourceStack> {
++        return Commands.argument(this.name, (this.argumentType as IArgumentType<*>).brigadier())
++            .requires {
++                this.requirement(it.bukkitSender)
++            }
++            .suggests { context, builder ->
++                val artistContext = ArtistCommandContext(context)
++                val provider = ArtistSuggestionProvider(artistContext)
++                provider.apply(this.suggestion)
++                provider.strings.forEach(builder::suggest)
++                provider.ints.forEach(builder::suggest)
++                return@suggests builder.buildFuture()
++            }
++            .apply {
++                if (this@ArgumentCommandImpl.executor != null)
++                    this.executes {
++                        val artistContext = ArtistCommandContext(it)
++                        this@ArgumentCommandImpl.executor!!(artistContext)
++                        return@executes 1
++                    }
++                for (child in this@ArgumentCommandImpl.children) {
++                    this.then(child.toBrigadier())
++                }
++            }
++            .build()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/ArtistArgumentManager.kt b/src/main/kotlin/net/deechael/artist/command/ArtistArgumentManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..ada99c593d572ef22c595cf6f8a11adae0af65a2
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/ArtistArgumentManager.kt
+@@ -0,0 +1,38 @@
++package net.deechael.artist.command
++
++import net.deechael.artist.command.argument.*
++import net.deechael.command.ArgumentManager
++import net.deechael.command.ArgumentType
++import org.bukkit.entity.Player
++
++object ArtistArgumentManager : ArgumentManager {
++
++    override fun string(): ArgumentType<String> {
++        return StringArgumentType
++    }
++
++    override fun bool(): ArgumentType<Boolean> {
++        return BoolArgumentType
++    }
++
++    override fun integer(min: Int, max: Int): ArgumentType<Int> {
++        return IntArgumentType(min, max)
++    }
++
++    override fun double(min: Double, max: Double): ArgumentType<Double> {
++        return DoubleArgumentType(min, max)
++    }
++
++    override fun float(min: Float, max: Float): ArgumentType<Float> {
++        return FloatArgumentType(min, max)
++    }
++
++    override fun singlePlayer(): ArgumentType<Player> {
++        return SinglePlayerArgumentType
++    }
++
++    override fun players(): ArgumentType<List<Player>> {
++        return PlayersArgumentType
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/ArtistCommandContext.kt b/src/main/kotlin/net/deechael/artist/command/ArtistCommandContext.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..37820ef69489f7e0d09d7e6479360f272bfce816
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/ArtistCommandContext.kt
+@@ -0,0 +1,25 @@
++package net.deechael.artist.command
++
++import net.deechael.artist.command.argument.IArgumentType
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.CommandSourceStack
++import org.bukkit.command.CommandSender
++
++class ArtistCommandContext(private val context: com.mojang.brigadier.context.CommandContext<CommandSourceStack>): CommandContext {
++
++    fun getOriginal(): com.mojang.brigadier.context.CommandContext<CommandSourceStack> {
++        return this.context
++    }
++
++    @Suppress("UNCHECKED_CAST")
++    override fun <T, A : ArgumentType<T>> get(name: String, argumentType: A): T {
++        argumentType as IArgumentType<*>
++        return this.context.getArgument(name, argumentType.brigadier().javaClass) as T
++    }
++
++    override fun getSender(): CommandSender {
++        return this.context.source.bukkitSender
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/ArtistCommandManagerImpl.kt b/src/main/kotlin/net/deechael/artist/command/ArtistCommandManagerImpl.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f6543c91c414a80b8d73f123abdd14bec4e28f26
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/ArtistCommandManagerImpl.kt
+@@ -0,0 +1,27 @@
++package net.deechael.artist.command
++
++import net.deechael.command.ArgumentManager
++import net.deechael.command.ArtistCommandManager
++import net.deechael.command.LiteralCommand
++
++object ArtistCommandManagerImpl : ArtistCommandManager{
++
++    private val commands = mutableListOf<ArtistCommandWrapper>()
++
++    override fun registerCommand(prefix: String, command: LiteralCommand) {
++        TODO("Not yet implemented")
++    }
++
++    override fun createCommand(name: String, literal: LiteralCommand.() -> Unit): LiteralCommand {
++        TODO("Not yet implemented")
++    }
++
++    override fun getArgumentManager(): ArgumentManager {
++        TODO("Not yet implemented")
++    }
++
++    fun getCommands(): List<ArtistCommandWrapper> {
++        return this.commands.toList()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/ArtistCommandWrapper.kt b/src/main/kotlin/net/deechael/artist/command/ArtistCommandWrapper.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..ee97b312b39410385d89498d13e57d1fd8a2afb3
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/ArtistCommandWrapper.kt
+@@ -0,0 +1,5 @@
++package net.deechael.artist.command
++
++class ArtistCommandWrapper(val prefix: String, val literal: LiteralCommandImpl) {
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/ArtistSuggestionProvider.kt b/src/main/kotlin/net/deechael/artist/command/ArtistSuggestionProvider.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..7b839cf9506264f7ca8b3cce4c2b9d8d24244cee
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/ArtistSuggestionProvider.kt
+@@ -0,0 +1,25 @@
++package net.deechael.artist.command
++
++import net.deechael.command.CommandContext
++import net.deechael.command.SuggestionProvider
++
++class ArtistSuggestionProvider(
++    private val context: CommandContext
++): SuggestionProvider {
++
++    val ints = mutableListOf<Int>()
++    val strings = mutableListOf<String>()
++
++    override fun getContext(): CommandContext {
++        return this.context
++    }
++
++    override fun suggest(int: Int) {
++        this.ints.add(int)
++    }
++
++    override fun suggest(string: String) {
++        this.strings.add(string)
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/CommandImpl.kt b/src/main/kotlin/net/deechael/artist/command/CommandImpl.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..c1e972645678c8dd505d884802c3c65fd5e6d604
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/CommandImpl.kt
+@@ -0,0 +1,10 @@
++package net.deechael.artist.command
++
++import com.mojang.brigadier.tree.CommandNode
++import net.minecraft.commands.CommandSourceStack
++
++abstract class CommandImpl {
++
++    abstract fun toBrigadier(): CommandNode<CommandSourceStack>
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/LiteralCommandImpl.kt b/src/main/kotlin/net/deechael/artist/command/LiteralCommandImpl.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..1473291a0cf5bbd8f9a5fcda3aed2aa7cf9d4730
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/LiteralCommandImpl.kt
+@@ -0,0 +1,60 @@
++package net.deechael.artist.command
++
++import com.mojang.brigadier.tree.CommandNode
++import net.deechael.command.*
++import net.minecraft.commands.CommandSourceStack
++import net.minecraft.commands.Commands
++import org.bukkit.command.CommandSender
++
++class LiteralCommandImpl(private val name: String) : CommandImpl(), LiteralCommand {
++
++    private var requirement: (CommandSender) -> Boolean = { true }
++    private var executor: (CommandContext.() -> Unit)? = null
++
++    private val children = mutableListOf<CommandImpl>()
++
++    override fun Requirement(requirement: (CommandSender) -> Boolean) {
++        this.requirement = requirement;
++    }
++
++    override fun Literal(name: String, literal: LiteralCommand.() -> Unit) {
++        val command = LiteralCommandImpl(name)
++        command.apply(literal)
++        this.children.add(command)
++    }
++
++    override fun <T, A : ArgumentType<T>> Argument(
++        name: String,
++        argumentType: A,
++        argument: ArgumentCommand.(CommandContext.() -> T) -> Unit
++    ) {
++        val command = ArgumentCommandImpl(name, argumentType)
++        argument(command) {
++            argumentType.get(this, name)
++        }
++    }
++
++    override fun Executor(context: CommandContext.() -> Unit) {
++        this.executor = context
++    }
++
++    override fun toBrigadier(): CommandNode<CommandSourceStack> {
++        return Commands.literal(this.name)
++            .requires {
++                this.requirement(it.bukkitSender)
++            }
++            .apply {
++                if (this@LiteralCommandImpl.executor != null)
++                    this.executes {
++                        val artistContext = ArtistCommandContext(it)
++                        this@LiteralCommandImpl.executor!!(artistContext)
++                        return@executes 1
++                    }
++                for (child in this@LiteralCommandImpl.children) {
++                    this.then(child.toBrigadier())
++                }
++            }
++            .build()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/BoolArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/BoolArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..eb7e7cb65c8a42ac848384b877d3c0a3e9725167
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/BoolArgumentType.kt
+@@ -0,0 +1,12 @@
++package net.deechael.artist.command.argument
++
++import com.mojang.brigadier.arguments.BoolArgumentType
++import net.deechael.command.ArgumentType
++
++object BoolArgumentType : ArgumentType<Boolean>, IArgumentType<Boolean> {
++
++    override fun brigadier(): BoolArgumentType {
++        return BoolArgumentType.bool()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/DoubleArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/DoubleArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..7cbb136d046268c76eb07756b18c950864c39a2f
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/DoubleArgumentType.kt
+@@ -0,0 +1,12 @@
++package net.deechael.artist.command.argument
++
++import com.mojang.brigadier.arguments.DoubleArgumentType
++import net.deechael.command.ArgumentType
++
++class DoubleArgumentType(val min: Double, val max: Double): ArgumentType<Double>, IArgumentType<Double> {
++
++    override fun brigadier(): DoubleArgumentType {
++        return DoubleArgumentType.doubleArg(this.min, this.max)
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/FloatArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/FloatArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..1ae56670c0d7dafcf1253866bc0a4d1d14fe18cd
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/FloatArgumentType.kt
+@@ -0,0 +1,12 @@
++package net.deechael.artist.command.argument
++
++import com.mojang.brigadier.arguments.FloatArgumentType
++import net.deechael.command.ArgumentType
++
++class FloatArgumentType(val min: Float, val max: Float): ArgumentType<Float>, IArgumentType<Float> {
++
++    override fun brigadier(): FloatArgumentType {
++        return FloatArgumentType.floatArg(this.min, this.max)
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/IArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/IArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..dea5f4881950b0b2f6a24ad5912b5d07ceae630d
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/IArgumentType.kt
+@@ -0,0 +1,9 @@
++package net.deechael.artist.command.argument
++
++import com.mojang.brigadier.arguments.ArgumentType
++
++interface IArgumentType<T> {
++
++    fun brigadier(): ArgumentType<T>
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/IntArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/IntArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..4de5dcc5de099ad131f88ebbd33e9c20b315a546
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/IntArgumentType.kt
+@@ -0,0 +1,12 @@
++package net.deechael.artist.command.argument
++
++import com.mojang.brigadier.arguments.IntegerArgumentType
++import net.deechael.command.ArgumentType
++
++class IntArgumentType(val min: Int, val max: Int): ArgumentType<Int>, IArgumentType<Int> {
++
++    override fun brigadier(): IntegerArgumentType {
++        return IntegerArgumentType.integer(this.min, this.max)
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/PlayersArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/PlayersArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..8a46a08424e54ac7def858dd582a936e3f21d1aa
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/PlayersArgumentType.kt
+@@ -0,0 +1,24 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.arguments.EntityArgument
++import net.minecraft.commands.arguments.selector.EntitySelector
++import net.minecraft.server.level.ServerPlayer
++import org.bukkit.entity.Player
++
++object PlayersArgumentType: ArgumentType<List<Player>>, IArgumentType<EntitySelector> {
++
++    override fun get(context: CommandContext, name: String): List<Player> {
++        return EntityArgument.getPlayers((context as ArtistCommandContext).getOriginal(), name)
++            .stream()
++            .map(ServerPlayer::getBukkitEntity)
++            .toList()
++    }
++
++    override fun brigadier(): EntityArgument {
++        return EntityArgument.players()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/SinglePlayerArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/SinglePlayerArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..e566608d55be3ae00750af47cdb9c238fac590e0
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/SinglePlayerArgumentType.kt
+@@ -0,0 +1,20 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.arguments.EntityArgument
++import net.minecraft.commands.arguments.selector.EntitySelector
++import org.bukkit.entity.Player
++
++object SinglePlayerArgumentType: ArgumentType<Player>, IArgumentType<EntitySelector> {
++
++    override fun get(context: CommandContext, name: String): Player {
++        return EntityArgument.getPlayer((context as ArtistCommandContext).getOriginal(), name).bukkitEntity
++    }
++
++    override fun brigadier(): EntityArgument {
++        return EntityArgument.player()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/StringArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/StringArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..35287c55a7573cf7f1bda127e5c545c633778069
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/StringArgumentType.kt
+@@ -0,0 +1,12 @@
++package net.deechael.artist.command.argument
++
++import com.mojang.brigadier.arguments.StringArgumentType
++import net.deechael.command.ArgumentType
++
++object StringArgumentType : ArgumentType<String>, IArgumentType<String> {
++
++    override fun brigadier(): StringArgumentType {
++        return StringArgumentType.string()
++    }
++
++}
+\ No newline at end of file

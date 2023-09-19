@@ -1,0 +1,1029 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Wed, 20 Sep 2023 00:25:07 +0800
+Subject: [PATCH] feat: nbt api
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 404cf21a8e286bd68b3815fbef96d2ecd792a70f..191b1c4b6963ab866f0507fc785ff3b4540651c2 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -50,10 +50,12 @@ import net.deechael.artist.command.ArtistCommandManagerImpl;
+ import net.deechael.artist.command.ArtistCommandWrapper;
+ import net.deechael.artist.command.LiteralCommandImpl;
+ import net.deechael.artist.element.ArtistElementManager;
++import net.deechael.artist.nbt.ArtistNbtManager;
+ import net.deechael.artist.protocol.ArtistProtocolManager;
+ import net.deechael.artist.skill.ArtistSkillManager;
+ import net.deechael.command.ArtistCommandManager;
+ import net.deechael.command.LiteralCommand;
++import net.deechael.nbt.NbtManager;
+ import net.deechael.protocol.ProtocolManager;
+ import net.minecraft.advancements.Advancement;
+ import net.minecraft.commands.CommandSourceStack;
+@@ -3195,4 +3197,9 @@ public final class CraftServer implements Server {
+         return ArtistCommandManagerImpl.INSTANCE;
+     }
+ 
++    @Override
++    public NbtManager getNbtManager() {
++        return ArtistNbtManager.INSTANCE;
++    }
++
+ }
+diff --git a/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java b/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java
+index f3ac362b7b65a5273ff5fdad1d8065c5f654a53a..4ce165c53adece0232ff0b626e9775d188ffd17d 100644
+--- a/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java
++++ b/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java
+@@ -6,10 +6,15 @@ import java.util.Collection;
+ import java.util.Collections;
+ import java.util.List;
+ import java.util.stream.Collectors;
++
++import net.deechael.artist.nbt.ArtistNbtManager;
++import net.deechael.artist.nbt.tag.ArtistNbtObject;
++import net.deechael.nbt.NbtTag;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.core.Direction;
+ import net.minecraft.core.Holder;
+ import net.minecraft.core.registries.Registries;
++import net.minecraft.nbt.CompoundTag;
+ import net.minecraft.resources.ResourceKey;
+ import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.world.InteractionHand;
+@@ -23,6 +28,7 @@ import net.minecraft.world.level.LightLayer;
+ import net.minecraft.world.level.block.Blocks;
+ import net.minecraft.world.level.block.RedStoneWireBlock;
+ import net.minecraft.world.level.block.SaplingBlock;
++import net.minecraft.world.level.block.entity.BlockEntity;
+ import net.minecraft.world.phys.AABB;
+ import net.minecraft.world.phys.BlockHitResult;
+ import net.minecraft.world.phys.HitResult;
+@@ -64,6 +70,7 @@ import org.bukkit.util.BlockVector;
+ import org.bukkit.util.BoundingBox;
+ import org.bukkit.util.RayTraceResult;
+ import org.bukkit.util.Vector;
++import org.jetbrains.annotations.Nullable;
+ 
+ public class CraftBlock implements Block {
+     private final net.minecraft.world.level.LevelAccessor world;
+@@ -752,4 +759,23 @@ public class CraftBlock implements Block {
+         blockData.getBlock().randomTick(blockData, level, this.position, level.random);
+     }
+     // Paper end
++
++    // Artist start
++    @Override
++    public void setNbtTag(@Nullable NbtTag nbtTag) {
++        BlockEntity blockEntity = this.world.getBlockEntity(this.position);
++        if (blockEntity == null)
++            return;
++        blockEntity.load(nbtTag == null ? null : (CompoundTag) ((ArtistNbtObject) nbtTag).toNms());
++    }
++
++    @Override
++    public @Nullable NbtTag getNbtTag() {
++        BlockEntity blockEntity = this.world.getBlockEntity(this.position);
++        if (blockEntity == null)
++            return null;
++        return (NbtTag) ArtistNbtManager.INSTANCE.fromMinecraft(blockEntity.saveWithFullMetadata());
++    }
++    // Artist end
++
+ }
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
+index 2dbe8b870fd39b4d22e9725912f443757ae70761..e39c32ed51af70d61070fbf6f33898f8fadfb60d 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
+@@ -7,6 +7,11 @@ import com.google.common.collect.Lists;
+ import java.util.List;
+ import java.util.Set;
+ import java.util.UUID;
++
++import net.deechael.artist.nbt.ArtistNbtManager;
++import net.deechael.artist.nbt.tag.ArtistNbtObject;
++import net.deechael.extensions.NbtDSLKt;
++import net.deechael.nbt.NbtTag;
+ import net.minecraft.nbt.CompoundTag;
+ import net.minecraft.nbt.Tag;
+ import net.minecraft.network.chat.Component;
+@@ -1507,4 +1512,19 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
+         return this.getHandle().getScoreboardName();
+     }
+     // Paper end - entity scoreboard name
++
++
++    // Artist start
++    @Override
++    public NbtTag getNbtTag() {
++        CompoundTag tag = new CompoundTag();
++        this.getHandle().save(tag);
++        return (NbtTag) ArtistNbtManager.INSTANCE.fromMinecraft(tag);
++    }
++
++    @Override
++    public void setNbtTag(NbtTag nbtTag) {
++        this.getHandle().load((CompoundTag) ((ArtistNbtObject) nbtTag).toNms());
++    }
++    // Artist end
+ }
+diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftItemFactory.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftItemFactory.java
+index 3f4e55bb9a4134e54adddca3c662285164068d95..5e8e4ccdc98374ca24e404bf0ded9447a2eafa81 100644
+--- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftItemFactory.java
++++ b/src/main/java/org/bukkit/craftbukkit/inventory/CraftItemFactory.java
+@@ -3,6 +3,9 @@ package org.bukkit.craftbukkit.inventory;
+ import com.google.common.base.Preconditions;
+ import com.mojang.brigadier.StringReader;
+ import com.mojang.brigadier.exceptions.CommandSyntaxException;
++import net.deechael.artist.nbt.ArtistNbtManager;
++import net.deechael.artist.nbt.tag.ArtistNbtObject;
++import net.deechael.nbt.NbtTag;
+ import net.minecraft.commands.arguments.item.ItemParser;
+ import net.minecraft.core.registries.BuiltInRegistries;
+ import net.minecraft.nbt.CompoundTag;
+@@ -18,6 +21,8 @@ import org.bukkit.entity.EntityType;
+ import org.bukkit.inventory.ItemFactory;
+ import org.bukkit.inventory.ItemStack;
+ import org.bukkit.inventory.meta.ItemMeta;
++import org.jetbrains.annotations.NotNull;
++import org.jetbrains.annotations.Nullable;
+ 
+ public final class CraftItemFactory implements ItemFactory {
+     static final Color DEFAULT_LEATHER_COLOR = Color.fromRGB(0xA06540);
+@@ -559,4 +564,33 @@ public final class CraftItemFactory implements ItemFactory {
+         return eggItem == null ? null : new net.minecraft.world.item.ItemStack(eggItem).asBukkitMirror();
+     }
+     // Paper end
++
++    // Artist start
++    @Override
++    public boolean hasNbtTag(ItemStack itemStack) {
++        final net.minecraft.world.item.ItemStack internalStack = CraftItemStack.asNMSCopy(itemStack);
++        return internalStack.hasTag();
++    }
++
++    @Override
++    public @Nullable NbtTag getNbtTag(ItemStack itemStack) {
++        final net.minecraft.world.item.ItemStack internalStack = CraftItemStack.asNMSCopy(itemStack);
++        CompoundTag tag = internalStack.getTag();
++        return tag != null ? (NbtTag) ArtistNbtManager.INSTANCE.fromMinecraft(tag) : null;
++    }
++
++    @Override
++    public void setNbtTag(ItemStack itemStack, @Nullable NbtTag nbtTag) {
++        final net.minecraft.world.item.ItemStack internalStack = CraftItemStack.asNMSCopy(itemStack);
++        internalStack.setTag(nbtTag == null ? null : (CompoundTag) ((ArtistNbtObject) nbtTag).toNms());
++    }
++
++    @Override
++    public @NotNull NbtTag getOrCreateNbtTag(ItemStack itemStack) {
++        final net.minecraft.world.item.ItemStack internalStack = CraftItemStack.asNMSCopy(itemStack);
++        CompoundTag tag = internalStack.getOrCreateTag();
++        return (NbtTag) ArtistNbtManager.INSTANCE.fromMinecraft(tag);
++    }
++    // Artist end
++
+ }
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/ArtistNbtManager.kt b/src/main/kotlin/net/deechael/artist/nbt/ArtistNbtManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f0be661f74a93c89653a5d07305399185314aff5
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/ArtistNbtManager.kt
+@@ -0,0 +1,142 @@
++package net.deechael.artist.nbt
++
++import net.deechael.artist.nbt.tag.*
++import net.deechael.nbt.*
++import net.minecraft.nbt.ByteArrayTag
++import net.minecraft.nbt.ByteTag
++import net.minecraft.nbt.CompoundTag
++import net.minecraft.nbt.DoubleTag
++import net.minecraft.nbt.EndTag
++import net.minecraft.nbt.FloatTag
++import net.minecraft.nbt.IntArrayTag
++import net.minecraft.nbt.IntTag
++import net.minecraft.nbt.ListTag
++import net.minecraft.nbt.LongArrayTag
++import net.minecraft.nbt.LongTag
++import net.minecraft.nbt.ShortTag
++import net.minecraft.nbt.StringTag
++import net.minecraft.nbt.Tag
++
++object ArtistNbtManager : NbtManager {
++
++    override fun tag(): NbtTag {
++        return ArtistNbtTag()
++    }
++
++    override fun list(): NbtList {
++        return ArtistNbtList()
++    }
++
++    override fun byte(value: Byte): NbtByte {
++        return ArtistNbtByte(value)
++    }
++
++    override fun int(value: Int): NbtInt {
++        return ArtistNbtInt(value)
++    }
++
++    override fun long(value: Long): NbtLong {
++        return ArtistNbtLong(value)
++    }
++
++    override fun short(value: Short): NbtShort {
++        return ArtistNbtShort(value)
++    }
++
++    override fun float(value: Float): NbtFloat {
++        return ArtistNbtFloat(value)
++    }
++
++    override fun double(value: Double): NbtDouble {
++        return ArtistNbtDouble(value)
++    }
++
++    override fun string(value: String): NbtString {
++        return ArtistNbtString(value)
++    }
++
++    override fun byteArray(array: ByteArray): NbtByteArray {
++        return ArtistNbtByteArray(array)
++    }
++
++    override fun intArray(array: IntArray): NbtIntArray {
++        return ArtistNbtIntArray(array)
++    }
++
++    override fun longArray(array: LongArray): NbtLongArray {
++        return ArtistNbtLongArray(array)
++    }
++
++    override fun end(): NbtEnd {
++        return ArtistNbtEnd
++    }
++
++    fun fromMinecraft(tag: Tag): NbtObject {
++        when (tag) {
++            is CompoundTag -> {
++                val nbtTag = ArtistNbtTag()
++                for (key in tag.allKeys) {
++                    nbtTag.put(key, fromMinecraft(tag[key]!!))
++                }
++                return nbtTag
++            }
++
++            is ListTag -> {
++                val listTag = ArtistNbtList()
++                tag.forEach {
++                    listTag.add(fromMinecraft(it))
++                }
++                return listTag
++            }
++
++            is StringTag -> {
++                return ArtistNbtString(tag.asString)
++            }
++
++            is ByteTag -> {
++                return ArtistNbtByte(tag.asByte)
++            }
++
++            is IntTag -> {
++                return ArtistNbtInt(tag.asInt)
++            }
++
++            is ShortTag -> {
++                return ArtistNbtShort(tag.asShort)
++            }
++
++            is LongTag -> {
++                return ArtistNbtLong(tag.asLong)
++            }
++
++            is DoubleTag -> {
++                return ArtistNbtDouble(tag.asDouble)
++            }
++
++            is FloatTag -> {
++                return ArtistNbtFloat(tag.asFloat)
++            }
++
++            is ByteArrayTag -> {
++                return ArtistNbtByteArray(tag.asByteArray)
++            }
++
++            is IntArrayTag -> {
++                return ArtistNbtIntArray(tag.asIntArray)
++            }
++
++            is LongArrayTag -> {
++                return ArtistNbtLongArray(tag.asLongArray)
++            }
++
++            is EndTag -> {
++                return ArtistNbtEnd
++            }
++
++            else -> {
++                return ArtistNbtUnrecognised(tag)
++            }
++        }
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtByte.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtByte.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..b474f5c1f0331da3a2ef78c251a9942acad97038
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtByte.kt
+@@ -0,0 +1,29 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtByte
++import net.minecraft.nbt.ByteTag
++import net.minecraft.nbt.Tag
++
++class ArtistNbtByte(private var value: Byte) : ArtistNbtObject(), NbtByte {
++
++    override fun getValue(): Byte {
++        return this.value
++    }
++
++    override fun setValue(value: Byte) {
++        this.value = value
++    }
++
++    override fun toNms(): Tag {
++        return ByteTag.valueOf(this.value)
++    }
++
++    override fun copy(): NbtByte {
++        return ArtistNbtByte(this.value)
++    }
++
++    override fun sizeInBytes(): Int {
++        return 9
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtByteArray.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtByteArray.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..ca97e1111e0c74eb5f1c3051eb3211eb6cc63b42
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtByteArray.kt
+@@ -0,0 +1,57 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtByte
++import net.deechael.nbt.NbtByteArray
++import net.minecraft.nbt.ByteArrayTag
++import net.minecraft.nbt.Tag
++import org.apache.commons.lang3.ArrayUtils
++
++class ArtistNbtByteArray(value: ByteArray) : ArtistNbtObject(), NbtByteArray {
++
++    private var value = arrayOf<NbtByte>()
++
++    init {
++        value.forEachIndexed { index, byte ->
++            this.value[index] = ArtistNbtByte(byte)
++        }
++    }
++
++    override fun toNms(): Tag {
++        return ByteArrayTag(this.value.toList().stream().map(NbtByte::getValue).toList())
++    }
++
++    override fun get(index: Int): NbtByte {
++        return this.value[index]
++    }
++
++    override fun set(index: Int, value: NbtByte) {
++        this.value[index] = value
++    }
++
++    override fun add(value: NbtByte) {
++        this.value[this.value.size] = value
++    }
++
++    override fun add(index: Int, value: NbtByte) {
++        ArrayUtils.add(this.value, index, value)
++    }
++
++    override fun remove(index: Int): NbtByte {
++        val byteTag = this.value[index].getValue()
++        this.value = ArrayUtils.remove(this.value, index)
++        return ArtistNbtByte(byteTag)
++    }
++
++    override fun clear() {
++        this.value = arrayOf()
++    }
++
++    override fun copy(): NbtByteArray {
++        return ArtistNbtByteArray(this.value.toList().stream().map(NbtByte::getValue).toList().toByteArray())
++    }
++
++    override fun sizeInBytes(): Int {
++        return 24 + 1 * this.value.size
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtDouble.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtDouble.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..24eeecd02759296a1db520c74e090f8f936a9e7d
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtDouble.kt
+@@ -0,0 +1,29 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtDouble
++import net.minecraft.nbt.DoubleTag
++import net.minecraft.nbt.Tag
++
++class ArtistNbtDouble(private var value: Double) : ArtistNbtObject(), NbtDouble {
++
++    override fun getValue(): Double {
++        return this.value
++    }
++
++    override fun setValue(value: Double) {
++        this.value = value
++    }
++
++    override fun toNms(): Tag {
++        return DoubleTag.valueOf(this.value)
++    }
++
++    override fun copy(): NbtDouble {
++        return ArtistNbtDouble(this.value)
++    }
++
++    override fun sizeInBytes(): Int {
++        return 16
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtEnd.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtEnd.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..b1e3d6509af3d81c29be379fc2e6c70ff65abab0
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtEnd.kt
+@@ -0,0 +1,21 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtEnd
++import net.minecraft.nbt.EndTag
++import net.minecraft.nbt.Tag
++
++object ArtistNbtEnd : ArtistNbtObject(), NbtEnd {
++
++    override fun toNms(): Tag {
++        return EndTag.INSTANCE
++    }
++
++    override fun copy(): NbtEnd {
++        return this
++    }
++
++    override fun sizeInBytes(): Int {
++        return 8
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtFloat.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtFloat.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..4f4aa5f22ef9e4556e015570addef7941cec759d
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtFloat.kt
+@@ -0,0 +1,29 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtFloat
++import net.minecraft.nbt.FloatTag
++import net.minecraft.nbt.Tag
++
++class ArtistNbtFloat(private var value: Float) : ArtistNbtObject(), NbtFloat {
++
++    override fun getValue(): Float {
++        return this.value
++    }
++
++    override fun setValue(value: Float) {
++        this.value = value
++    }
++
++    override fun toNms(): Tag {
++        return FloatTag.valueOf(this.value)
++    }
++
++    override fun copy(): NbtFloat {
++        return ArtistNbtFloat(this.value)
++    }
++
++    override fun sizeInBytes(): Int {
++        return 12
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtInt.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtInt.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..cf6959f31103dd142a7aaf2d7fd959ab9cf6c4f0
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtInt.kt
+@@ -0,0 +1,29 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtInt
++import net.minecraft.nbt.IntTag
++import net.minecraft.nbt.Tag
++
++class ArtistNbtInt(private var value: Int) : ArtistNbtObject(), NbtInt {
++
++    override fun getValue(): Int {
++        return this.value
++    }
++
++    override fun setValue(value: Int) {
++        this.value = value
++    }
++
++    override fun toNms(): Tag {
++        return IntTag.valueOf(this.value)
++    }
++
++    override fun copy(): NbtInt {
++        return ArtistNbtInt(this.value)
++    }
++
++    override fun sizeInBytes(): Int {
++        return 12
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtIntArray.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtIntArray.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..233b049fb2ae63ceca05fcb47b1371e0004759b4
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtIntArray.kt
+@@ -0,0 +1,57 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtInt
++import net.deechael.nbt.NbtIntArray
++import net.minecraft.nbt.IntArrayTag
++import net.minecraft.nbt.Tag
++import org.apache.commons.lang3.ArrayUtils
++
++class ArtistNbtIntArray(value: IntArray) : ArtistNbtObject(), NbtIntArray {
++
++    private var value = arrayOf<NbtInt>()
++
++    init {
++        value.forEachIndexed { index, int ->
++            this.value[index] = ArtistNbtInt(int)
++        }
++    }
++
++    override fun toNms(): Tag {
++        return IntArrayTag(this.value.toList().stream().map(NbtInt::getValue).toList())
++    }
++
++    override fun get(index: Int): NbtInt {
++        return this.value[index]
++    }
++
++    override fun set(index: Int, value: NbtInt) {
++        this.value[index] = value
++    }
++
++    override fun add(value: NbtInt) {
++        this.value[this.value.size] = value
++    }
++
++    override fun add(index: Int, value: NbtInt) {
++        ArrayUtils.add(this.value, index, value)
++    }
++
++    override fun remove(index: Int): NbtInt {
++        val IntTag = this.value[index].getValue()
++        this.value = ArrayUtils.remove(this.value, index)
++        return ArtistNbtInt(IntTag)
++    }
++
++    override fun clear() {
++        this.value = arrayOf()
++    }
++
++    override fun copy(): NbtIntArray {
++        return ArtistNbtIntArray(this.value.toList().stream().map(NbtInt::getValue).toList().toIntArray())
++    }
++
++    override fun sizeInBytes(): Int {
++        return 24 + 4 * this.value.size
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtList.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtList.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..0ddaff0bbd516510c1dd89c32a6868bdecd88d69
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtList.kt
+@@ -0,0 +1,95 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtList
++import net.deechael.nbt.NbtObject
++import net.minecraft.nbt.ListTag
++import net.minecraft.nbt.Tag
++
++class ArtistNbtList : ArtistNbtObject(), NbtList {
++
++    private var value = mutableListOf<ArtistNbtObject>()
++
++    private var type: Class<*>? = null
++
++    override fun get(index: Int): NbtObject {
++        return this.value[index]
++    }
++
++    override fun set(index: Int, value: NbtObject) {
++        if (this.isEmpty()) {
++            type = value.javaClass
++            this.value[index] = value as ArtistNbtObject
++            return
++        }
++        if (this.type != value.javaClass)
++            return
++        this.value[index] = value as ArtistNbtObject
++    }
++
++    override fun add(value: NbtObject) {
++        if (this.isEmpty()) {
++            type = value.javaClass
++            this.value.add(value as ArtistNbtObject)
++            return
++        }
++        if (this.type != value.javaClass)
++            return
++        this.value.add(value as ArtistNbtObject)
++    }
++
++    override fun add(index: Int, value: NbtObject) {
++        if (this.isEmpty()) {
++            type = value.javaClass
++            this.value.add(index, value as ArtistNbtObject)
++            return
++        }
++        if (this.type != value.javaClass)
++            return
++        this.value.add(index, value as ArtistNbtObject)
++    }
++
++    override fun remove(index: Int): NbtObject {
++        return this.value.removeAt(index)
++    }
++
++    override fun clear() {
++        this.value.clear()
++        this.type = null
++    }
++
++    override fun size(): Int {
++        return this.value.size
++    }
++
++    override fun isEmpty(): Boolean {
++        return this.value.isEmpty()
++    }
++
++    override fun toNms(): Tag {
++        val list = ListTag()
++        this.value.forEach { artistNbtObject ->
++            list.add(artistNbtObject.toNms())
++        }
++        return list
++    }
++
++    override fun copy(): NbtList {
++        val newList = ArtistNbtList()
++        this.value.forEachIndexed { index, artistNbtObject -> newList.value[index] =
++            artistNbtObject.copy() as ArtistNbtObject
++        }
++        return newList
++    }
++
++    override fun sizeInBytes(): Int {
++        var i = 37
++        i += 4 * this.value.size
++
++        for (tag in this.value) {
++            i += tag.sizeInBytes()
++        }
++
++        return i
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtLong.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtLong.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..1904ca9b189bcfa30fca3b1731666001418da630
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtLong.kt
+@@ -0,0 +1,29 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtLong
++import net.minecraft.nbt.LongTag
++import net.minecraft.nbt.Tag
++
++class ArtistNbtLong(private var value: Long) : ArtistNbtObject(), NbtLong {
++
++    override fun getValue(): Long {
++        return this.value
++    }
++
++    override fun setValue(value: Long) {
++        this.value = value
++    }
++
++    override fun toNms(): Tag {
++        return LongTag.valueOf(this.value)
++    }
++
++    override fun copy(): NbtLong {
++        return ArtistNbtLong(this.value)
++    }
++
++    override fun sizeInBytes(): Int {
++        return 16
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtLongArray.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtLongArray.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..ee56f9f30c02c5014bab8c6ed38ce235de316f69
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtLongArray.kt
+@@ -0,0 +1,57 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtLong
++import net.deechael.nbt.NbtLongArray
++import net.minecraft.nbt.LongArrayTag
++import net.minecraft.nbt.Tag
++import org.apache.commons.lang3.ArrayUtils
++
++class ArtistNbtLongArray(value: LongArray) : ArtistNbtObject(), NbtLongArray {
++
++    private var value = arrayOf<NbtLong>()
++
++    init {
++        value.forEachIndexed { index, long ->
++            this.value[index] = ArtistNbtLong(long)
++        }
++    }
++
++    override fun toNms(): Tag {
++        return LongArrayTag(this.value.toList().stream().map(NbtLong::getValue).toList())
++    }
++
++    override fun get(index: Int): NbtLong {
++        return this.value[index]
++    }
++
++    override fun set(index: Int, value: NbtLong) {
++        this.value[index] = value
++    }
++
++    override fun add(value: NbtLong) {
++        this.value[this.value.size] = value
++    }
++
++    override fun add(index: Int, value: NbtLong) {
++        ArrayUtils.add(this.value, index, value)
++    }
++
++    override fun remove(index: Int): NbtLong {
++        val LongTag = this.value[index].getValue()
++        this.value = ArrayUtils.remove(this.value, index)
++        return ArtistNbtLong(LongTag)
++    }
++
++    override fun clear() {
++        this.value = arrayOf()
++    }
++
++    override fun copy(): NbtLongArray {
++        return ArtistNbtLongArray(this.value.toList().stream().map(NbtLong::getValue).toList().toLongArray())
++    }
++
++    override fun sizeInBytes(): Int {
++        return 24 + 8 * this.value.size
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtObject.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtObject.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..a146a9215f16d453ddfd27bd08cb5b3eb9d1165f
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtObject.kt
+@@ -0,0 +1,10 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtObject
++import net.minecraft.nbt.Tag
++
++abstract class ArtistNbtObject : NbtObject {
++
++    abstract fun toNms(): Tag
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtShort.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtShort.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..4ccbb6454088f1ceddea26af271f5bf3e93a068f
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtShort.kt
+@@ -0,0 +1,29 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtShort
++import net.minecraft.nbt.ShortTag
++import net.minecraft.nbt.Tag
++
++class ArtistNbtShort(private var value: Short) : ArtistNbtObject(), NbtShort {
++
++    override fun getValue(): Short {
++        return this.value
++    }
++
++    override fun setValue(value: Short) {
++        this.value = value
++    }
++
++    override fun toNms(): Tag {
++        return ShortTag.valueOf(this.value)
++    }
++
++    override fun copy(): NbtShort {
++        return ArtistNbtShort(this.value)
++    }
++
++    override fun sizeInBytes(): Int {
++        return 10
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtString.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtString.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..3ca74e841090a3a54e2cbbd4265b29e79873d178
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtString.kt
+@@ -0,0 +1,29 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtString
++import net.minecraft.nbt.StringTag
++import net.minecraft.nbt.Tag
++
++class ArtistNbtString(private var value: String) : ArtistNbtObject(), NbtString {
++
++    override fun getValue(): String {
++        return this.value
++    }
++
++    override fun setValue(value: String) {
++        this.value = value
++    }
++
++    override fun toNms(): Tag {
++        return StringTag.valueOf(this.value)
++    }
++
++    override fun copy(): NbtString {
++        return ArtistNbtString(this.value)
++    }
++
++    override fun sizeInBytes(): Int {
++        return 36 + 2 * this.value.length
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtTag.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtTag.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..08e156d6b9f08eb28fe659caa0306419270ed3e1
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtTag.kt
+@@ -0,0 +1,68 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtObject
++import net.deechael.nbt.NbtTag
++import net.minecraft.nbt.CompoundTag
++import net.minecraft.nbt.Tag
++
++class ArtistNbtTag : ArtistNbtObject(), NbtTag {
++
++    private val value = mutableMapOf<String, ArtistNbtObject>()
++
++    override fun size(): Int {
++        return this.size()
++    }
++
++    override fun getAllKeys(): Set<String> {
++        return this.value.keys
++    }
++
++    override fun get(key: String): NbtObject {
++        return this.value[key]!!
++    }
++
++    override fun put(key: String, obj: NbtObject) {
++        this.value[key] = obj as ArtistNbtObject
++    }
++
++    override fun contains(key: String): Boolean {
++        return this.value.containsKey(key)
++    }
++
++    override fun remove(key: String) {
++        this.value.remove(key)
++    }
++
++    override fun isEmpty(): Boolean {
++        return this.value.isEmpty()
++    }
++
++    override fun toNms(): Tag {
++        val tag = CompoundTag()
++        for (key in this.getAllKeys()) {
++            tag.put(key, this.value[key]!!.toNms())
++        }
++        return tag
++    }
++
++    override fun copy(): NbtTag {
++        val newNbtTag = ArtistNbtTag()
++        for (key in this.getAllKeys()) {
++            newNbtTag.value[key] = this.value[key]!!.copy() as ArtistNbtObject
++        }
++        return newNbtTag
++    }
++
++    override fun sizeInBytes(): Int {
++        var i = 48
++
++        for ((key, value) in this.value.entries) {
++            i += 28 + 2 * key.length
++            i += 36
++            i += value.sizeInBytes()
++        }
++
++        return i
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtUnrecognised.kt b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtUnrecognised.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..8980b53708421c5c4836bcce7d3758cfd18ddd86
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/nbt/tag/ArtistNbtUnrecognised.kt
+@@ -0,0 +1,21 @@
++package net.deechael.artist.nbt.tag
++
++import net.deechael.nbt.NbtObject
++import net.deechael.nbt.NbtUnrecognised
++import net.minecraft.nbt.Tag
++
++class ArtistNbtUnrecognised(private val original: Tag) : ArtistNbtObject(), NbtUnrecognised {
++
++    override fun toNms(): Tag {
++        return this.original
++    }
++
++    override fun copy(): NbtObject {
++        return ArtistNbtUnrecognised(this.original.copy())
++    }
++
++    override fun sizeInBytes(): Int {
++        return this.original.sizeInBytes()
++    }
++
++}
+\ No newline at end of file

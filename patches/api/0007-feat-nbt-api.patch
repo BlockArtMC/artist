@@ -1,0 +1,581 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Wed, 20 Sep 2023 00:25:13 +0800
+Subject: [PATCH] feat: nbt api
+
+
+diff --git a/src/main/java/org/bukkit/Bukkit.java b/src/main/java/org/bukkit/Bukkit.java
+index cd8b714537adbe4f2c366ffa88d4c52a1e308b9e..9ebdcd00b9cfb37efd7abdc169f0eac6ff7e430e 100644
+--- a/src/main/java/org/bukkit/Bukkit.java
++++ b/src/main/java/org/bukkit/Bukkit.java
+@@ -16,6 +16,7 @@ import java.util.function.Consumer;
+ import java.util.logging.Logger;
+ 
+ import net.deechael.command.ArtistCommandManager;
++import net.deechael.nbt.NbtManager;
+ import net.deechael.protocol.ProtocolManager;
+ import net.deechael.elements.api.ElementManager;
+ import net.deechael.skills.api.SkillManager;
+@@ -2777,6 +2778,10 @@ public final class Bukkit {
+     public static ArtistCommandManager getArtistCommandManager() {
+         return server.getArtistCommandManager();
+     }
++
++    public static NbtManager getNbtManager() {
++        return server.getNbtManager();
++    }
+     // Artist end
+ 
+     @NotNull
+diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
+index 8e2d2b2fee99c797b75c28337b98ad73b3466dcd..1e1ec69d398a282d440d670308056794fa16d354 100644
+--- a/src/main/java/org/bukkit/Server.java
++++ b/src/main/java/org/bukkit/Server.java
+@@ -16,6 +16,7 @@ import java.util.function.Consumer;
+ import java.util.logging.Logger;
+ 
+ import net.deechael.command.ArtistCommandManager;
++import net.deechael.nbt.NbtManager;
+ import net.deechael.protocol.ProtocolManager;
+ import net.deechael.elements.api.ElementManager;
+ import net.deechael.skills.api.SkillManager;
+@@ -2422,5 +2423,7 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
+     ProtocolManager getProtocolManager();
+ 
+     ArtistCommandManager getArtistCommandManager();
++
++    NbtManager getNbtManager();
+     // Artist end
+ }
+diff --git a/src/main/java/org/bukkit/block/Block.java b/src/main/java/org/bukkit/block/Block.java
+index 41b7310a514bf4d42c501e4bffe04008bda2541f..1a5a8d3526c8abf3244acc1832eb3323a25b8ab9 100644
+--- a/src/main/java/org/bukkit/block/Block.java
++++ b/src/main/java/org/bukkit/block/Block.java
+@@ -1,12 +1,9 @@
+ package org.bukkit.block;
+ 
+ import java.util.Collection;
+-import org.bukkit.Chunk;
+-import org.bukkit.FluidCollisionMode;
+-import org.bukkit.Location;
+-import org.bukkit.Material;
+-import org.bukkit.Translatable;
+-import org.bukkit.World;
++
++import net.deechael.nbt.NbtTag;
++import org.bukkit.*;
+ import org.bukkit.block.data.Bisected;
+ import org.bukkit.block.data.BlockData;
+ import org.bukkit.entity.Entity;
+@@ -787,4 +784,11 @@ public interface Block extends Metadatable, Translatable, net.kyori.adventure.tr
+         return this.getBlockData().getDestroySpeed(itemStack, considerEnchants);
+     }
+     // Paper end - destroy speed API
++
++    // Artist start
++    @Nullable
++    NbtTag getNbtTag();
++
++    void setNbtTag(@Nullable NbtTag nbtTag);
++    // Artist end
+ }
+diff --git a/src/main/java/org/bukkit/entity/Entity.java b/src/main/java/org/bukkit/entity/Entity.java
+index 762cb07861ca8ff058ce8d57ea6c15df1e588bf3..bac8dea48806e4b413b5516e8308bfdc567dd91a 100644
+--- a/src/main/java/org/bukkit/entity/Entity.java
++++ b/src/main/java/org/bukkit/entity/Entity.java
+@@ -3,6 +3,8 @@ package org.bukkit.entity;
+ import java.util.List;
+ import java.util.Set;
+ import java.util.UUID;
++
++import net.deechael.nbt.NbtTag;
+ import org.bukkit.Chunk; // Paper
+ import org.bukkit.EntityEffect;
+ import org.bukkit.Location;
+@@ -1049,4 +1051,11 @@ public interface Entity extends Metadatable, CommandSender, Nameable, Persistent
+      */
+     @NotNull String getScoreboardEntryName();
+     // Paper end - entity scoreboard name
++
++    // Artist start
++    NbtTag getNbtTag();
++
++    void setNbtTag(NbtTag nbtTag);
++    // Artist end
++
+ }
+diff --git a/src/main/java/org/bukkit/inventory/ItemFactory.java b/src/main/java/org/bukkit/inventory/ItemFactory.java
+index ab73893656932f54009340df59293df2a732be51..edebeb043275638d47861cc69275da69c43fc1df 100644
+--- a/src/main/java/org/bukkit/inventory/ItemFactory.java
++++ b/src/main/java/org/bukkit/inventory/ItemFactory.java
+@@ -1,5 +1,6 @@
+ package org.bukkit.inventory;
+ 
++import net.deechael.nbt.NbtTag;
+ import org.bukkit.Color;
+ import org.bukkit.Material;
+ import org.bukkit.Server;
+@@ -298,4 +299,17 @@ public interface ItemFactory {
+     @Deprecated
+     net.md_5.bungee.api.chat.hover.content.Content hoverContentOf(@NotNull org.bukkit.entity.Entity entity, @NotNull net.md_5.bungee.api.chat.BaseComponent[] customName);
+     // Paper end - bungee hover events
+-}
++
++    // Artist start
++    boolean hasNbtTag(ItemStack itemStack);
++
++    @Nullable
++    NbtTag getNbtTag(ItemStack itemStack);
++
++    void setNbtTag(ItemStack itemStack, @Nullable NbtTag nbtTag);
++
++    @NotNull
++    NbtTag getOrCreateNbtTag(ItemStack itemStack);
++    // Artist end
++
++}
+\ No newline at end of file
+diff --git a/src/main/java/org/bukkit/inventory/ItemStack.java b/src/main/java/org/bukkit/inventory/ItemStack.java
+index d15a74c38576c49df61cfab02c70fc5d8c0dd5f7..fdde5dfafd89788a594fb2cb162f5b6ff4fb82a3 100644
+--- a/src/main/java/org/bukkit/inventory/ItemStack.java
++++ b/src/main/java/org/bukkit/inventory/ItemStack.java
+@@ -5,6 +5,8 @@ import com.google.common.collect.ImmutableMap;
+ import java.util.LinkedHashMap;
+ import java.util.List; // Paper
+ import java.util.Map;
++
++import net.deechael.nbt.NbtTag;
+ import org.bukkit.Bukkit;
+ import org.bukkit.Material;
+ import org.bukkit.Translatable;
+@@ -986,4 +988,25 @@ public class ItemStack implements Cloneable, ConfigurationSerializable, Translat
+         return livingEntity.damageItemStack(this, amount);
+     }
+     // Paper end
++
++    // Artist start
++    public boolean hasNbtTag() {
++        return Bukkit.getItemFactory().hasNbtTag(this);
++    }
++
++    @Nullable
++    public NbtTag getNbtTag() {
++        return Bukkit.getItemFactory().getNbtTag(this);
++    }
++
++    public void setNbtTag(@Nullable NbtTag nbtTag) {
++        Bukkit.getItemFactory().setNbtTag(this, nbtTag);
++    }
++
++    @NotNull
++    public NbtTag getOrCreateNbtTag() {
++        return Bukkit.getItemFactory().getOrCreateNbtTag(this);
++    }
++    // Artist end
++
+ }
+diff --git a/src/main/kotlin/net/deechael/extensions/NbtDSL.kt b/src/main/kotlin/net/deechael/extensions/NbtDSL.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..16a52d536524c583145bbf3d5c6e9f4f64ba02d3
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/extensions/NbtDSL.kt
+@@ -0,0 +1,57 @@
++package net.deechael.extensions
++
++import net.deechael.nbt.*
++import org.bukkit.Bukkit
++
++
++fun tagNbt(): NbtTag {
++    return Bukkit.getNbtManager().tag()
++}
++
++fun listNbt(): NbtList{
++    return Bukkit.getNbtManager().list()
++}
++
++fun byteNbt(value: Byte): NbtByte{
++    return Bukkit.getNbtManager().byte(value)
++}
++
++fun intNbt(value: Int): NbtInt{
++    return Bukkit.getNbtManager().int(value)
++}
++
++fun longNbt(value: Long): NbtLong{
++    return Bukkit.getNbtManager().long(value)
++}
++
++fun shortNbt(value: Short): NbtShort{
++    return Bukkit.getNbtManager().short(value)
++}
++
++fun floatNbt(value: Float): NbtFloat{
++    return Bukkit.getNbtManager().float(value)
++}
++
++fun doubleNbt(value: Double): NbtDouble{
++    return Bukkit.getNbtManager().double(value)
++}
++
++fun stringNbt(value: String): NbtString{
++    return Bukkit.getNbtManager().string(value)
++}
++
++fun byteArrayNbt(array: ByteArray): NbtByteArray{
++    return Bukkit.getNbtManager().byteArray(array)
++}
++
++fun intArrayNbt(array: IntArray): NbtIntArray{
++    return Bukkit.getNbtManager().intArray(array)
++}
++
++fun longArrayNbt(array: LongArray): NbtLongArray{
++    return Bukkit.getNbtManager().longArray(array)
++}
++
++fun endNbt(): NbtEnd{
++    return Bukkit.getNbtManager().end()
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtByte.kt b/src/main/kotlin/net/deechael/nbt/NbtByte.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..0f97eb9f858ccef5c8071356b4ec8854bcdb84cf
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtByte.kt
+@@ -0,0 +1,11 @@
++package net.deechael.nbt
++
++interface NbtByte : NbtObject {
++
++    fun getValue(): Byte
++
++    fun setValue(value: Byte)
++
++    override fun copy(): NbtByte
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtByteArray.kt b/src/main/kotlin/net/deechael/nbt/NbtByteArray.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..6c114d407fc8c21d2c9e420640c33ee1f7af3127
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtByteArray.kt
+@@ -0,0 +1,19 @@
++package net.deechael.nbt
++
++interface NbtByteArray : NbtObject {
++
++    fun get(index: Int): NbtByte
++
++    fun set(index: Int, value: NbtByte)
++
++    fun add(value: NbtByte)
++
++    fun add(index: Int, value: NbtByte)
++
++    fun remove(index: Int): NbtByte
++
++    fun clear()
++
++    override fun copy(): NbtByteArray
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtDouble.kt b/src/main/kotlin/net/deechael/nbt/NbtDouble.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..652a95db017b97a83dff503c266ee743b2beb0bf
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtDouble.kt
+@@ -0,0 +1,11 @@
++package net.deechael.nbt
++
++interface NbtDouble : NbtObject {
++
++    fun getValue(): Double
++
++    fun setValue(value: Double)
++
++    override fun copy(): NbtDouble
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtEnd.kt b/src/main/kotlin/net/deechael/nbt/NbtEnd.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..35149268aa89922dc0f6e10b4a3fc8b84771e8d1
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtEnd.kt
+@@ -0,0 +1,7 @@
++package net.deechael.nbt
++
++interface NbtEnd : NbtObject {
++
++    override fun copy(): NbtEnd
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtFloat.kt b/src/main/kotlin/net/deechael/nbt/NbtFloat.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..4f4adcd1b815590129bb1290ad67d3f3ae0ea3d4
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtFloat.kt
+@@ -0,0 +1,11 @@
++package net.deechael.nbt
++
++interface NbtFloat : NbtObject {
++
++    fun getValue(): Float
++
++    fun setValue(value: Float)
++
++    override fun copy(): NbtFloat
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtInt.kt b/src/main/kotlin/net/deechael/nbt/NbtInt.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..1961583df40e9a49d505c1b33a3cefb89900b45a
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtInt.kt
+@@ -0,0 +1,11 @@
++package net.deechael.nbt
++
++interface NbtInt : NbtObject {
++
++    fun getValue(): Int
++
++    fun setValue(value: Int)
++
++    override fun copy(): NbtInt
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtIntArray.kt b/src/main/kotlin/net/deechael/nbt/NbtIntArray.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..0348648476de8a7518b567d244fee2e2f2738665
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtIntArray.kt
+@@ -0,0 +1,19 @@
++package net.deechael.nbt
++
++interface NbtIntArray : NbtObject {
++
++    fun get(index: Int): NbtInt
++
++    fun set(index: Int, value: NbtInt)
++
++    fun add(value: NbtInt)
++
++    fun add(index: Int, value: NbtInt)
++
++    fun remove(index: Int): NbtInt
++
++    fun clear()
++
++    override fun copy(): NbtIntArray
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtList.kt b/src/main/kotlin/net/deechael/nbt/NbtList.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f5b46a212ed0a9ba3fd0cd6a47618c9bacac9c34
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtList.kt
+@@ -0,0 +1,23 @@
++package net.deechael.nbt
++
++interface NbtList : NbtObject {
++
++    fun get(index: Int): NbtObject
++
++    fun set(index: Int, value: NbtObject)
++
++    fun add(value: NbtObject)
++
++    fun add(index: Int, value: NbtObject)
++
++    fun remove(index: Int): NbtObject
++
++    fun clear()
++
++    fun size(): Int
++
++    fun isEmpty(): Boolean
++
++    override fun copy(): NbtList
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtLong.kt b/src/main/kotlin/net/deechael/nbt/NbtLong.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..cf37ee692d1302b702b03fce1415244123919bd3
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtLong.kt
+@@ -0,0 +1,11 @@
++package net.deechael.nbt
++
++interface NbtLong : NbtObject {
++
++    fun getValue(): Long
++
++    fun setValue(value: Long)
++
++    override fun copy(): NbtLong
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtLongArray.kt b/src/main/kotlin/net/deechael/nbt/NbtLongArray.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..c03cef9755bb673dca47adef84014bafd8d91e38
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtLongArray.kt
+@@ -0,0 +1,19 @@
++package net.deechael.nbt
++
++interface NbtLongArray : NbtObject {
++
++    fun get(index: Int): NbtLong
++
++    fun set(index: Int, value: NbtLong)
++
++    fun add(value: NbtLong)
++
++    fun add(index: Int, value: NbtLong)
++
++    fun remove(index: Int): NbtLong
++
++    fun clear()
++
++    override fun copy(): NbtLongArray
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtManager.kt b/src/main/kotlin/net/deechael/nbt/NbtManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..fe1251536bb8e957a68ce57f5abfd4d7fe0e7af4
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtManager.kt
+@@ -0,0 +1,31 @@
++package net.deechael.nbt
++
++interface NbtManager {
++
++    fun tag(): NbtTag
++
++    fun list(): NbtList
++
++    fun byte(value: Byte): NbtByte
++
++    fun int(value: Int): NbtInt
++
++    fun long(value: Long): NbtLong
++
++    fun short(value: Short): NbtShort
++
++    fun float(value: Float): NbtFloat
++
++    fun double(value: Double): NbtDouble
++
++    fun string(value: String): NbtString
++
++    fun byteArray(array: ByteArray): NbtByteArray
++
++    fun intArray(array: IntArray): NbtIntArray
++
++    fun longArray(array: LongArray): NbtLongArray
++
++    fun end(): NbtEnd
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtObject.kt b/src/main/kotlin/net/deechael/nbt/NbtObject.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..659982077d15f7b3b5a377621cd64609a6277af9
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtObject.kt
+@@ -0,0 +1,9 @@
++package net.deechael.nbt
++
++interface NbtObject {
++
++    fun copy(): NbtObject
++
++    fun sizeInBytes(): Int
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtShort.kt b/src/main/kotlin/net/deechael/nbt/NbtShort.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..15580f8920493dbd00d0d868b2dc06349e134eb0
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtShort.kt
+@@ -0,0 +1,11 @@
++package net.deechael.nbt
++
++interface NbtShort : NbtObject {
++
++    fun getValue(): Short
++
++    fun setValue(value: Short)
++
++    override fun copy(): NbtShort
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtString.kt b/src/main/kotlin/net/deechael/nbt/NbtString.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..258e8b670a134f01c00a6f8ae037223c26742b0a
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtString.kt
+@@ -0,0 +1,11 @@
++package net.deechael.nbt
++
++interface NbtString : NbtObject {
++
++    fun getValue(): String
++
++    fun setValue(value: String)
++
++    override fun copy(): NbtString
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtTag.kt b/src/main/kotlin/net/deechael/nbt/NbtTag.kt
+index 58b040cb1396da710e2f74add6106bf4e28cbb40..7db0b0ab230cc160f0d5504c4ecc290656f56d7a 100644
+--- a/src/main/kotlin/net/deechael/nbt/NbtTag.kt
++++ b/src/main/kotlin/net/deechael/nbt/NbtTag.kt
+@@ -1,4 +1,21 @@
+ package net.deechael.nbt
+ 
+-interface NbtTag {
++interface NbtTag : NbtObject {
++
++    fun size(): Int
++
++    fun getAllKeys(): Set<String>
++
++    fun get(key: String): NbtObject
++
++    fun put(key: String, obj: NbtObject)
++
++    fun contains(key: String): Boolean
++
++    fun remove(key: String)
++
++    fun isEmpty(): Boolean
++
++    override fun copy(): NbtTag
++
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtUnrecognised.kt b/src/main/kotlin/net/deechael/nbt/NbtUnrecognised.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..0807c79210675641c6f9e8ca07cba88dda7ab0a6
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtUnrecognised.kt
+@@ -0,0 +1,4 @@
++package net.deechael.nbt
++
++interface NbtUnrecognised : NbtObject {
++}
+\ No newline at end of file

@@ -1,0 +1,549 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Tue, 19 Sep 2023 22:36:14 +0800
+Subject: [PATCH] feat: more command arguments
+
+
+diff --git a/src/main/java/net/minecraft/commands/Commands.java b/src/main/java/net/minecraft/commands/Commands.java
+index 80c2c8d565f03ae0ea24fbdecdbe2bc5b9aa4b82..5d2db08ad9747f3faf1bd3504d838f3135c50086 100644
+--- a/src/main/java/net/minecraft/commands/Commands.java
++++ b/src/main/java/net/minecraft/commands/Commands.java
+@@ -34,7 +34,6 @@ import net.minecraft.gametest.framework.TestCommand;
+ import net.minecraft.network.chat.ClickEvent;
+ import net.minecraft.network.chat.CommonComponents;
+ import net.minecraft.network.chat.Component;
+-import net.minecraft.network.chat.ComponentUtils;
+ import net.minecraft.network.chat.HoverEvent;
+ import net.minecraft.network.chat.MutableComponent;
+ import net.minecraft.network.protocol.game.ClientboundCommandsPacket;
+@@ -139,8 +138,15 @@ public class Commands {
+     private final com.mojang.brigadier.CommandDispatcher<CommandSourceStack> dispatcher = new com.mojang.brigadier.CommandDispatcher();
+     public final java.util.List<CommandNode<CommandSourceStack>> vanillaCommandNodes = new java.util.ArrayList<>(); // Paper
+ 
++    public static CommandBuildContext COMMAND_REGISTRY_ACCESS = null; // Artist
++
+     public Commands(Commands.CommandSelection environment, CommandBuildContext commandRegistryAccess) {
+-        this(); // CraftBukkit
++        // Artist start
++        this.dispatcher.setConsumer((commandcontext, flag, i) -> {
++            commandcontext.getSource().onCommandComplete(commandcontext, flag, i);
++        });
++        COMMAND_REGISTRY_ACCESS = commandRegistryAccess;
++        // Artist end
+         AdvancementCommands.register(this.dispatcher);
+         AttributeCommand.register(this.dispatcher, commandRegistryAccess);
+         ExecuteCommand.register(this.dispatcher, commandRegistryAccess);
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 14d640928c3b5902477b02e89e3bb6664b9a5bbd..404cf21a8e286bd68b3815fbef96d2ecd792a70f 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -552,6 +552,7 @@ public final class CraftServer implements Server {
+     // Paper end
+ 
+     public void enablePlugins(PluginLoadOrder type) {
++        ArtistCommandManagerImpl.INSTANCE.setAllowRegistering(true);
+         if (type == PluginLoadOrder.STARTUP) {
+             this.helpMap.clear();
+             this.helpMap.initializeGeneralTopics();
+@@ -580,6 +581,7 @@ public final class CraftServer implements Server {
+             this.helpMap.initializeCommands();
+             this.syncCommands();
+         }
++        ArtistCommandManagerImpl.INSTANCE.setAllowRegistering(false);
+     }
+ 
+     public void disablePlugins() {
+diff --git a/src/main/kotlin/net/deechael/artist/command/ArtistArgumentManager.kt b/src/main/kotlin/net/deechael/artist/command/ArtistArgumentManager.kt
+index 4618a462a17131a3a2c4a4f133fa24dac71f7e8a..058c909c349762a20a192df9e38c86a9687062b1 100644
+--- a/src/main/kotlin/net/deechael/artist/command/ArtistArgumentManager.kt
++++ b/src/main/kotlin/net/deechael/artist/command/ArtistArgumentManager.kt
+@@ -3,7 +3,19 @@ package net.deechael.artist.command
+ import net.deechael.artist.command.argument.*
+ import net.deechael.command.ArgumentManager
+ import net.deechael.command.ArgumentType
++import net.kyori.adventure.text.Component
++import net.minecraft.commands.arguments.blocks.BlockStateArgument
++import org.bukkit.GameMode
++import org.bukkit.Location
++import org.bukkit.OfflinePlayer
++import org.bukkit.Particle
++import org.bukkit.World
++import org.bukkit.block.data.BlockData
++import org.bukkit.entity.Entity
+ import org.bukkit.entity.Player
++import org.bukkit.inventory.ItemStack
++import org.bukkit.util.Vector
++import java.util.*
+ 
+ object ArtistArgumentManager : ArgumentManager {
+ 
+@@ -35,4 +47,56 @@ object ArtistArgumentManager : ArgumentManager {
+         return PlayersArgumentType
+     }
+ 
++    override fun optionalPlayers(): ArgumentType<List<Player>> {
++        return OptionalPlayersArgumentType
++    }
++
++    override fun singleEntity(): ArgumentType<Entity> {
++        return SingleEntityArgumentType
++    }
++
++    override fun entities(): ArgumentType<List<Entity>> {
++        return EntitiesArgumentType
++    }
++
++    override fun optionalEntities(): ArgumentType<List<Entity>> {
++        return OptionalEntitiesArgumentType
++    }
++
++    override fun world(): ArgumentType<World> {
++        return WorldArgumentType
++    }
++
++    override fun vector(center: Boolean): ArgumentType<Vector> {
++        return VectorArgumentType(center)
++    }
++
++    override fun message(): ArgumentType<Component> {
++        return MessageArgumentType
++    }
++
++    override fun angle(): ArgumentType<Float> {
++        return AngleArgumentType
++    }
++
++    override fun particle(): ArgumentType<Particle> {
++        return ParticleArgumentType
++    }
++
++    override fun offlinePlayers(): ArgumentType<List<OfflinePlayer>> {
++        return OfflinePlayersArgumentType
++    }
++
++    override fun uuid(): ArgumentType<UUID> {
++        return UUIDArgumentType
++    }
++
++    override fun gameMode(): ArgumentType<GameMode> {
++        return GameModeArgumentType
++    }
++
++    override fun itemStack(): ArgumentType<ItemStack> {
++        return ItemStackArgumentType
++    }
++
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/ArtistCommandManagerImpl.kt b/src/main/kotlin/net/deechael/artist/command/ArtistCommandManagerImpl.kt
+index 2ab5707bee07035b9010aca84ee64fc17eef7c4b..eea2d3facd44c5fd0e1ac6fefeecffadc2e4f8dc 100644
+--- a/src/main/kotlin/net/deechael/artist/command/ArtistCommandManagerImpl.kt
++++ b/src/main/kotlin/net/deechael/artist/command/ArtistCommandManagerImpl.kt
+@@ -3,16 +3,23 @@ package net.deechael.artist.command
+ import net.deechael.command.ArgumentManager
+ import net.deechael.command.ArtistCommandManager
+ import net.deechael.command.LiteralCommand
++import java.lang.RuntimeException
+ 
+ object ArtistCommandManagerImpl : ArtistCommandManager{
+ 
+     private val commands = mutableListOf<ArtistCommandWrapper>()
+ 
++    var allowRegistering = true
++
+     override fun registerCommand(prefix: String, command: LiteralCommand) {
++        if (!allowRegistering)
++            throw RuntimeException("Command cannot be registered now")
+         this.commands.add(ArtistCommandWrapper(prefix, command as LiteralCommandImpl))
+     }
+ 
+     override fun createCommand(name: String, literal: LiteralCommand.() -> Unit): LiteralCommand {
++        if (!allowRegistering)
++            throw RuntimeException("Command cannot be registered now")
+         val command = LiteralCommandImpl(name)
+         command.apply(literal)
+         return command
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/AngleArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/AngleArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..da05eaf832c1616a2b0952eeed7db663c43f1948
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/AngleArgumentType.kt
+@@ -0,0 +1,20 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.arguments.AngleArgument
++
++object AngleArgumentType : ArgumentType<Float>, IArgumentType<AngleArgument.SingleAngle> {
++
++    override fun get(context: CommandContext, name: String): Float {
++        val original = (context as ArtistCommandContext).getOriginal()
++
++        return AngleArgument.getAngle(original, name)
++    }
++
++    override fun brigadier(): AngleArgument {
++        return AngleArgument.angle()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/EntitiesArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/EntitiesArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..4365497afc5193dff3bf83d8e9e114083bd97a90
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/EntitiesArgumentType.kt
+@@ -0,0 +1,25 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.arguments.EntityArgument
++import net.minecraft.commands.arguments.selector.EntitySelector
++import net.minecraft.server.level.ServerPlayer
++import org.bukkit.entity.Entity
++import org.bukkit.entity.Player
++
++object EntitiesArgumentType: ArgumentType<List<Entity>>, IArgumentType<EntitySelector> {
++
++    override fun get(context: CommandContext, name: String): List<Entity> {
++        return EntityArgument.getEntities((context as ArtistCommandContext).getOriginal(), name)
++            .stream()
++            .map(net.minecraft.world.entity.Entity::getBukkitEntity)
++            .toList()
++    }
++
++    override fun brigadier(): EntityArgument {
++        return EntityArgument.entities()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/GameModeArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/GameModeArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..db1ee1c71c66ebdbd9d9aaf4efa36a30f5038b66
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/GameModeArgumentType.kt
+@@ -0,0 +1,21 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.arguments.GameModeArgument
++import net.minecraft.world.level.GameType
++import org.bukkit.GameMode
++
++object GameModeArgumentType : ArgumentType<GameMode>, IArgumentType<GameType> {
++
++    override fun get(context: CommandContext, name: String): GameMode {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return GameMode.valueOf(GameModeArgument.getGameMode(original, name).name.uppercase())
++    }
++
++    override fun brigadier(): GameModeArgument {
++        return GameModeArgument.gameMode()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/ItemStackArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/ItemStackArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..e2ae8cfbc4546f43c68e88be378f0ecbb8aa190b
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/ItemStackArgumentType.kt
+@@ -0,0 +1,22 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.Commands
++import net.minecraft.commands.arguments.item.ItemArgument
++import net.minecraft.commands.arguments.item.ItemInput
++import org.bukkit.inventory.ItemStack
++
++object ItemStackArgumentType : ArgumentType<ItemStack>, IArgumentType<ItemInput> {
++
++    override fun get(context: CommandContext, name: String): ItemStack {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return ItemArgument.getItem(original, name).createItemStack(1, false).bukkitStack
++    }
++
++    override fun brigadier(): ItemArgument {
++        return ItemArgument.item(Commands.COMMAND_REGISTRY_ACCESS)
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/MessageArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/MessageArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..cbd5383df481924f49124fbc1b2fe13798fb2c21
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/MessageArgumentType.kt
+@@ -0,0 +1,22 @@
++package net.deechael.artist.command.argument
++
++import io.papermc.paper.adventure.PaperAdventure
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.kyori.adventure.text.Component
++import net.minecraft.commands.arguments.MessageArgument
++
++object MessageArgumentType: ArgumentType<Component>, IArgumentType<MessageArgument.Message> {
++
++    override fun get(context: CommandContext, name: String): Component {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return PaperAdventure.asAdventure(MessageArgument.getMessage(original, name))
++    }
++
++    override fun brigadier(): MessageArgument {
++        return MessageArgument.message()
++    }
++
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/OfflinePlayersArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/OfflinePlayersArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..e0f3556bd6990f04d753f4d386d8cf196d951a25
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/OfflinePlayersArgumentType.kt
+@@ -0,0 +1,26 @@
++package net.deechael.artist.command.argument
++
++import com.mojang.authlib.GameProfile
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.arguments.GameProfileArgument
++import org.bukkit.Bukkit
++import org.bukkit.OfflinePlayer
++
++object OfflinePlayersArgumentType : ArgumentType<List<OfflinePlayer>>, IArgumentType<GameProfileArgument.Result> {
++
++    override fun get(context: CommandContext, name: String): List<OfflinePlayer> {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return GameProfileArgument.getGameProfiles(original, name)
++            .stream()
++            .map(GameProfile::getId)
++            .map(Bukkit::getOfflinePlayer)
++            .toList()
++    }
++
++    override fun brigadier(): GameProfileArgument {
++        return GameProfileArgument.gameProfile()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/OptionalEntitiesArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/OptionalEntitiesArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..b002f5406a1506c477d7fc479b7bf294809708ab
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/OptionalEntitiesArgumentType.kt
+@@ -0,0 +1,25 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.arguments.EntityArgument
++import net.minecraft.commands.arguments.selector.EntitySelector
++import net.minecraft.server.level.ServerPlayer
++import org.bukkit.entity.Entity
++import org.bukkit.entity.Player
++
++object OptionalEntitiesArgumentType: ArgumentType<List<Entity>>, IArgumentType<EntitySelector> {
++
++    override fun get(context: CommandContext, name: String): List<Entity> {
++        return EntityArgument.getOptionalEntities((context as ArtistCommandContext).getOriginal(), name)
++            .stream()
++            .map(net.minecraft.world.entity.Entity::getBukkitEntity)
++            .toList()
++    }
++
++    override fun brigadier(): EntityArgument {
++        return EntityArgument.entities()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/OptionalPlayersArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/OptionalPlayersArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..a15b2b0149b4c4ea9b4546bded7dc9282d8d9329
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/OptionalPlayersArgumentType.kt
+@@ -0,0 +1,24 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.arguments.EntityArgument
++import net.minecraft.commands.arguments.selector.EntitySelector
++import net.minecraft.server.level.ServerPlayer
++import org.bukkit.entity.Player
++
++object OptionalPlayersArgumentType: ArgumentType<List<Player>>, IArgumentType<EntitySelector> {
++
++    override fun get(context: CommandContext, name: String): List<Player> {
++        return EntityArgument.getOptionalPlayers((context as ArtistCommandContext).getOriginal(), name)
++            .stream()
++            .map(ServerPlayer::getBukkitEntity)
++            .toList()
++    }
++
++    override fun brigadier(): EntityArgument {
++        return EntityArgument.players()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/ParticleArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/ParticleArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..90be34f0a7757e309035d452825ff16d1eacb3a5
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/ParticleArgumentType.kt
+@@ -0,0 +1,23 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.Commands
++import net.minecraft.commands.arguments.ParticleArgument
++import net.minecraft.core.particles.ParticleOptions
++import org.bukkit.Particle
++import org.bukkit.craftbukkit.CraftParticle
++
++object ParticleArgumentType : ArgumentType<Particle>, IArgumentType<ParticleOptions> {
++
++    override fun get(context: CommandContext, name: String): Particle {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return CraftParticle.toBukkit(ParticleArgument.getParticle(original, name))
++    }
++
++    override fun brigadier(): ParticleArgument {
++        return ParticleArgument.particle(Commands.COMMAND_REGISTRY_ACCESS);
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/SingleEntityArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/SingleEntityArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..3befd9a89d766ca1dc41bde19ee49b7491497d16
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/SingleEntityArgumentType.kt
+@@ -0,0 +1,21 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.arguments.EntityArgument
++import net.minecraft.commands.arguments.selector.EntitySelector
++import org.bukkit.entity.Entity
++import org.bukkit.entity.Player
++
++object SingleEntityArgumentType: ArgumentType<Entity>, IArgumentType<EntitySelector> {
++
++    override fun get(context: CommandContext, name: String): Entity {
++        return EntityArgument.getEntity((context as ArtistCommandContext).getOriginal(), name).bukkitEntity
++    }
++
++    override fun brigadier(): EntityArgument {
++        return EntityArgument.entity()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/UUIDArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/UUIDArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..01cf1ceacd84151df19cdf2e07f364861c3f0578
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/UUIDArgumentType.kt
+@@ -0,0 +1,20 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.arguments.UuidArgument
++import java.util.UUID
++
++object UUIDArgumentType : ArgumentType<UUID>, IArgumentType<UUID> {
++
++    override fun get(context: CommandContext, name: String): UUID {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return UuidArgument.getUuid(original, name)
++    }
++
++    override fun brigadier(): UuidArgument {
++        return UuidArgument.uuid()
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/VectorArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/VectorArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..fa7f631f8b626b40957c30116dc064cd0704ce07
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/VectorArgumentType.kt
+@@ -0,0 +1,22 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.arguments.coordinates.Coordinates
++import net.minecraft.commands.arguments.coordinates.Vec3Argument
++import org.bukkit.craftbukkit.util.CraftVector
++import org.bukkit.util.Vector
++
++class VectorArgumentType(private val center: Boolean = true) : ArgumentType<Vector>, IArgumentType<Coordinates> {
++
++    override fun get(context: CommandContext, name: String): Vector {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return CraftVector.toBukkit(Vec3Argument.getVec3(original, name))
++    }
++
++    override fun brigadier(): Vec3Argument {
++        return Vec3Argument.vec3(center)
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/WorldArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/WorldArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..cea7e4f549a4780068ed14aff6756c08dd6dd181
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/WorldArgumentType.kt
+@@ -0,0 +1,22 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.arguments.DimensionArgument
++import net.minecraft.resources.ResourceLocation
++import org.bukkit.World
++
++object WorldArgumentType : ArgumentType<World>, IArgumentType<ResourceLocation> {
++
++    override fun get(context: CommandContext, name: String): World {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return DimensionArgument.getDimension(original, name).world
++    }
++
++    override fun brigadier(): DimensionArgument {
++        return DimensionArgument.dimension();
++    }
++
++
++}
+\ No newline at end of file

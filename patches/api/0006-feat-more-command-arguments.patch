@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Tue, 19 Sep 2023 22:36:07 +0800
+Subject: [PATCH] feat: more command arguments
+
+
+diff --git a/src/main/java/org/bukkit/block/BlockStack.java b/src/main/java/org/bukkit/block/BlockStack.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..99aaf9ead87fa1f2f64f873be0f5b278388f23a0
+--- /dev/null
++++ b/src/main/java/org/bukkit/block/BlockStack.java
+@@ -0,0 +1,12 @@
++package org.bukkit.block;
++
++import net.deechael.nbt.NbtTag;
++import org.bukkit.Material;
++
++public interface BlockStack {
++
++    Material getType();
++
++    NbtTag getTag();
++
++}
+diff --git a/src/main/kotlin/net/deechael/command/ArgumentManager.kt b/src/main/kotlin/net/deechael/command/ArgumentManager.kt
+index a71ff7e1bd612f6e09ccc98400da1d69cd90cec6..948a2a88114475e9f3b35f8a3214ee97e4dfe9f8 100644
+--- a/src/main/kotlin/net/deechael/command/ArgumentManager.kt
++++ b/src/main/kotlin/net/deechael/command/ArgumentManager.kt
+@@ -1,6 +1,15 @@
+ package net.deechael.command
+ 
++import net.kyori.adventure.text.Component
++import org.bukkit.GameMode
++import org.bukkit.OfflinePlayer
++import org.bukkit.Particle
++import org.bukkit.World
++import org.bukkit.entity.Entity
+ import org.bukkit.entity.Player
++import org.bukkit.inventory.ItemStack
++import org.bukkit.util.Vector
++import java.util.UUID
+ 
+ interface ArgumentManager {
+ 
+@@ -18,4 +27,30 @@ interface ArgumentManager {
+ 
+     fun players(): ArgumentType<List<Player>>
+ 
++    fun optionalPlayers(): ArgumentType<List<Player>>
++
++    fun singleEntity(): ArgumentType<Entity>
++
++    fun entities(): ArgumentType<List<Entity>>
++
++    fun optionalEntities(): ArgumentType<List<Entity>>
++
++    fun world(): ArgumentType<World>
++
++    fun vector(center: Boolean = true): ArgumentType<Vector>
++
++    fun message(): ArgumentType<Component>
++
++    fun angle(): ArgumentType<Float>
++
++    fun particle(): ArgumentType<Particle>
++
++    fun offlinePlayers(): ArgumentType<List<OfflinePlayer>>
++
++    fun uuid(): ArgumentType<UUID>
++
++    fun gameMode(): ArgumentType<GameMode>
++
++    fun itemStack(): ArgumentType<ItemStack>
++
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/nbt/NbtTag.kt b/src/main/kotlin/net/deechael/nbt/NbtTag.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..58b040cb1396da710e2f74add6106bf4e28cbb40
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/nbt/NbtTag.kt
+@@ -0,0 +1,4 @@
++package net.deechael.nbt
++
++interface NbtTag {
++}
+\ No newline at end of file

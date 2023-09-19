@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: DeeChael <DeeChael@outlook.com>
-Date: Fri, 1 Sep 2023 00:34:00 +0800
-Subject: [PATCH] modified skill api
+Date: Thu, 31 Aug 2023 14:46:55 +0800
+Subject: [PATCH] feat: skill api
 
 
 diff --git a/src/main/java/org/bukkit/Bukkit.java b/src/main/java/org/bukkit/Bukkit.java
@@ -47,42 +47,123 @@ index 8a22f65498f51507ea09b522a17e360035184c5e..b0904d838ef2d5690d5e0d1a26ea1589
 +    SkillManager getSkillManager();
      // Artist end
  }
-diff --git a/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt b/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt
-index 2e5f99876df2d30dd5ec082be59c9749546810ae..74f0b2256b0a2dd5ffb77332ab166c3ecd454557 100644
---- a/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt
-+++ b/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt
-@@ -1,5 +1,9 @@
- package net.deechael.skills.api
+diff --git a/src/main/java/org/bukkit/entity/LivingEntity.java b/src/main/java/org/bukkit/entity/LivingEntity.java
+index 0ee9a1287cfd6d72438b60fa88ecc58a1e6b856c..9bd371311e1ed6c39515d9c410b82b11198a830b 100644
+--- a/src/main/java/org/bukkit/entity/LivingEntity.java
++++ b/src/main/java/org/bukkit/entity/LivingEntity.java
+@@ -6,6 +6,7 @@ import java.util.Set;
+ import java.util.UUID;
  
-+import net.deechael.skills.api.trigger.Trigger
+ import net.deechael.elements.api.application.ElementApplication;
++import net.deechael.skills.api.SkillContainer;
+ import org.bukkit.FluidCollisionMode;
+ import org.bukkit.Location;
+ import org.bukkit.Material;
+@@ -1195,5 +1196,10 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+     void setBodyYaw(float bodyYaw);
+     // Paper end
+ 
++    // Artist start
+     ElementApplication getElementApplication();
 +
- abstract class PassiveSkill(id: String, cooldown: Double, manaCost: Int) : Skill(id, cooldown, manaCost) {
- 
-+    abstract fun getTriggers(): List<Trigger>
++    SkillContainer getSkillContainer();
++    // Artist end
 +
  }
+diff --git a/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt b/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..74f0b2256b0a2dd5ffb77332ab166c3ecd454557
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/skills/api/PassiveSkill.kt
+@@ -0,0 +1,9 @@
++package net.deechael.skills.api
++
++import net.deechael.skills.api.trigger.Trigger
++
++abstract class PassiveSkill(id: String, cooldown: Double, manaCost: Int) : Skill(id, cooldown, manaCost) {
++
++    abstract fun getTriggers(): List<Trigger>
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/skills/api/Skill.kt b/src/main/kotlin/net/deechael/skills/api/Skill.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..6517ac613ca57f3f3b75d7173585de50af83c615
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/skills/api/Skill.kt
+@@ -0,0 +1,26 @@
++package net.deechael.skills.api
++
++import org.bukkit.entity.LivingEntity
++import org.bukkit.inventory.ItemStack
++
++abstract class Skill(
++    private val id: String,
++    private val cooldown: Double,
++    private val manaCost: Int
++) {
++
++    fun getId(): String {
++        return this.id
++    }
++
++    fun getCooldown(): Double {
++        return this.cooldown
++    }
++
++    fun getManaCost(): Int {
++        return this.manaCost
++    }
++
++    abstract fun trigger(commander: LivingEntity, skillItem: ItemStack?)
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/skills/api/SkillContainer.kt b/src/main/kotlin/net/deechael/skills/api/SkillContainer.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..5b147e0f5cfb3729ca74c8c176021ed2086b622c
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/skills/api/SkillContainer.kt
+@@ -0,0 +1,17 @@
++package net.deechael.skills.api
++
++interface SkillContainer {
++
++    fun getPassiveSkill(): PassiveSkill?
++
++    fun setPassiveSkill(passiveSkill: PassiveSkill?)
++
++    fun hasPassiveSkill(): Boolean
++
++    fun getSkill(slot: SkillSlot): Skill?
++
++    fun setSkill(slot: SkillSlot, skill: Skill?)
++
++    fun hasSkill(slot: SkillSlot): Boolean
++
++}
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/skills/api/SkillManager.kt b/src/main/kotlin/net/deechael/skills/api/SkillManager.kt
-index 19cbef4153dadb775ca0824fcc3991c0d211d937..2468355f8bec9b2a8c17e2746c4d4b995ae9a291 100644
---- a/src/main/kotlin/net/deechael/skills/api/SkillManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..2468355f8bec9b2a8c17e2746c4d4b995ae9a291
+--- /dev/null
 +++ b/src/main/kotlin/net/deechael/skills/api/SkillManager.kt
-@@ -1,13 +1,24 @@
- package net.deechael.skills.api
- 
+@@ -0,0 +1,24 @@
++package net.deechael.skills.api
++
 +import net.deechael.skills.api.trigger.Trigger
- import org.bukkit.NamespacedKey
- 
- interface SkillManager {
- 
-     fun registerSkill(key: NamespacedKey, skill: Skill)
- 
--    fun getSkill(key: NamespacedKey)
++import org.bukkit.NamespacedKey
++
++interface SkillManager {
++
++    fun registerSkill(key: NamespacedKey, skill: Skill)
++
 +    fun hasSkill(key: NamespacedKey): Boolean
 +
 +    fun getSkill(key: NamespacedKey): Skill
- 
-     fun getSkills(): Map<NamespacedKey, Skill>
- 
++
++    fun getSkills(): Map<NamespacedKey, Skill>
++
 +    fun registerTrigger(key: NamespacedKey): Trigger
 +
 +    fun hasTrigger(key: NamespacedKey): Boolean
@@ -91,7 +172,23 @@ index 19cbef4153dadb775ca0824fcc3991c0d211d937..2468355f8bec9b2a8c17e2746c4d4b99
 +
 +    fun getTriggers(): Map<NamespacedKey, Trigger>
 +
- }
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/skills/api/SkillSlot.kt b/src/main/kotlin/net/deechael/skills/api/SkillSlot.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..9fa3b5af65d85b7d5cbe6a2f14cf177563c57c8e
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/skills/api/SkillSlot.kt
+@@ -0,0 +1,9 @@
++package net.deechael.skills.api
++
++enum class SkillSlot {
++
++    PRIMARY,
++    SECONDARY,
++    THIRDARY
++
++}
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/skills/api/trigger/Trigger.kt b/src/main/kotlin/net/deechael/skills/api/trigger/Trigger.kt
 new file mode 100644

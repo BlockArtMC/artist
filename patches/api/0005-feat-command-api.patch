@@ -49,7 +49,7 @@ index f9b9ac7edfa02a063d10f60da67552aec25546b1..8e2d2b2fee99c797b75c28337b98ad73
  }
 diff --git a/src/main/kotlin/net/deechael/command/ArgumentCommand.kt b/src/main/kotlin/net/deechael/command/ArgumentCommand.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..ea1116b16ad76e375ff6a770b35cef95bbb6b3a8
+index 0000000000000000000000000000000000000000..4ae68e4654a6d47a00ff1b704f0b2bff1cacbf01
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/command/ArgumentCommand.kt
 @@ -0,0 +1,7 @@
@@ -63,7 +63,7 @@ index 0000000000000000000000000000000000000000..ea1116b16ad76e375ff6a770b35cef95
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/command/ArgumentManager.kt b/src/main/kotlin/net/deechael/command/ArgumentManager.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..5377dca914cbb47eeedfbb62bd24b62e2b495a7f
+index 0000000000000000000000000000000000000000..a71ff7e1bd612f6e09ccc98400da1d69cd90cec6
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/command/ArgumentManager.kt
 @@ -0,0 +1,21 @@
@@ -91,23 +91,21 @@ index 0000000000000000000000000000000000000000..5377dca914cbb47eeedfbb62bd24b62e
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/command/ArgumentType.kt b/src/main/kotlin/net/deechael/command/ArgumentType.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..7bfc3cd49d27acb7326a4738bdac49fccddd2b64
+index 0000000000000000000000000000000000000000..1180c79825488f6002126ce3b53fdcaabb446fd6
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/command/ArgumentType.kt
-@@ -0,0 +1,9 @@
+@@ -0,0 +1,7 @@
 +package net.deechael.command
 +
 +interface ArgumentType<T> {
 +
-+    fun get(context: CommandContext, name: String): T {
-+        return context.get(name, this)
-+    }
++    fun get(context: CommandContext, name: String): T
 +
 +}
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/command/ArtistCommandManager.kt b/src/main/kotlin/net/deechael/command/ArtistCommandManager.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..8f4519a9c85692830809b57fedcbec20463939c4
+index 0000000000000000000000000000000000000000..115f536ed140865f39deddcb67c34b8f0408efec
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/command/ArtistCommandManager.kt
 @@ -0,0 +1,12 @@
@@ -125,7 +123,7 @@ index 0000000000000000000000000000000000000000..8f4519a9c85692830809b57fedcbec20
 +
 diff --git a/src/main/kotlin/net/deechael/command/Command.kt b/src/main/kotlin/net/deechael/command/Command.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..68fab6c9e7dbe374b2faf27e6c90da72f3397709
+index 0000000000000000000000000000000000000000..14e2bc3000114b8e983a59eb5f6ec32c350b4c2e
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/command/Command.kt
 @@ -0,0 +1,15 @@
@@ -147,17 +145,15 @@ index 0000000000000000000000000000000000000000..68fab6c9e7dbe374b2faf27e6c90da72
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/command/CommandContext.kt b/src/main/kotlin/net/deechael/command/CommandContext.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..d8fe8a681110207eef989a08f9dd57f73c5cee1e
+index 0000000000000000000000000000000000000000..06378964f14f88c6e972db40fb6164801cbb51c4
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/command/CommandContext.kt
-@@ -0,0 +1,11 @@
+@@ -0,0 +1,9 @@
 +package net.deechael.command
 +
 +import org.bukkit.command.CommandSender
 +
 +interface CommandContext {
-+
-+    fun <T, A : ArgumentType<T>> get(name: String, argumentType: A): T
 +
 +    fun getSender(): CommandSender
 +
@@ -165,7 +161,7 @@ index 0000000000000000000000000000000000000000..d8fe8a681110207eef989a08f9dd57f7
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/command/LiteralCommand.kt b/src/main/kotlin/net/deechael/command/LiteralCommand.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..240deec16099f96bb0968776291294068b418e9b
+index 0000000000000000000000000000000000000000..ac1d678935bd25bc29a6e40b62891ff3d180a281
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/command/LiteralCommand.kt
 @@ -0,0 +1,5 @@
@@ -177,7 +173,7 @@ index 0000000000000000000000000000000000000000..240deec16099f96bb096877629129406
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/command/SuggestionProvider.kt b/src/main/kotlin/net/deechael/command/SuggestionProvider.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..fb42a26f6e4ac9624f7d5b98617408acfe5c9ca6
+index 0000000000000000000000000000000000000000..3cc89a6dfeae7bea66f79f5f122a0c6d50225005
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/command/SuggestionProvider.kt
 @@ -0,0 +1,12 @@

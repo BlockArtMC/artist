@@ -1,11 +1,11 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: DeeChael <DeeChael@outlook.com>
 Date: Fri, 1 Sep 2023 00:34:18 +0800
-Subject: [PATCH] implemented skill api
+Subject: [PATCH] feat: implemented skill api
 
 
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 1ffbfea8aed80c0aed5524f2db1aa046925a236b..a904a1322f1a24ac6379deed18583734791403fc 100644
+index e45a8e7a42ec4ed390c9a6d2bdcf06f00cc3bffb..d42a06605cd1e63e5eb7e5457a0ff4bb03173bbb 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -24,6 +24,7 @@ import io.papermc.paper.adventure.PaperAdventure;
@@ -16,15 +16,7 @@ index 1ffbfea8aed80c0aed5524f2db1aa046925a236b..a904a1322f1a24ac6379deed18583734
  import net.deechael.elements.api.ElementGauge;
  import net.deechael.elements.api.ElementType;
  import net.deechael.elements.api.application.source.ApplicationSource;
-@@ -279,6 +280,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
-     public boolean silentDeath = false; // Paper - mark entity as dying silently for cancellable death event
-     public net.kyori.adventure.util.TriState frictionState = net.kyori.adventure.util.TriState.NOT_SET; // Paper
-     private ArtistElementApplication elementApplication = new ArtistElementApplication(this);
-+    private ArtistSkillContainer skillContainer = new ArtistSkillContainer();
-     private Display.TextDisplay namePlate;
- 
-     @Override
-@@ -4540,6 +4542,10 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -4536,6 +4537,10 @@ public abstract class LivingEntity extends Entity implements Attackable {
          return this.elementApplication;
      }
  
@@ -216,7 +208,7 @@ index 0000000000000000000000000000000000000000..894457864edcce4786f7480861d632bc
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt b/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..b2d25cddd894e292078770460b025ec9a2ca548f
+index 0000000000000000000000000000000000000000..72cf9f1d69685cd7c90b756633ba6c4aded0e05d
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/skill/trigger/AbstractTriggerEnvironment.kt
 @@ -0,0 +1,17 @@
@@ -226,7 +218,7 @@ index 0000000000000000000000000000000000000000..b2d25cddd894e292078770460b025ec9
 +import net.minecraft.world.entity.LivingEntity
 +import org.bukkit.inventory.ItemStack
 +
-+abstract class AbstractTriggerEnvironment(val target: LivingEntity, val itemStack: ItemStack?): TriggerEnvironment {
++abstract class AbstractTriggerEnvironment(private val target: LivingEntity, private val itemStack: ItemStack?): TriggerEnvironment {
 +
 +    override fun getTarget(): org.bukkit.entity.LivingEntity {
 +        return this.target.bukkitLivingEntity

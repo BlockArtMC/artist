@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: DeeChael <DeeChael@outlook.com>
 Date: Mon, 28 Aug 2023 23:29:11 +0800
-Subject: [PATCH] implemented elements api
+Subject: [PATCH] feat: implemented elements api
 
 
 diff --git a/build.gradle.kts b/build.gradle.kts
@@ -295,6 +295,27 @@ index 53e53a37740ea40aa30ef57b63d9f9ff5fb609a0..2b504326cba1513b37360af0e43639e6
 +        return this.elementManager;
 +    }
 +
+ }
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragonPart.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragonPart.java
+index a407e802164603c74ec1f4ad3c98bc50398954bc..2a01c2a19fcd0a0b00857dc6f9d738c72223e79c 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragonPart.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragonPart.java
+@@ -1,5 +1,6 @@
+ package org.bukkit.craftbukkit.entity;
+ 
++import net.deechael.elements.api.application.source.ApplicationSource;
+ import org.bukkit.craftbukkit.CraftServer;
+ import org.bukkit.entity.EnderDragon;
+ import org.bukkit.entity.EnderDragonPart;
+@@ -69,4 +70,9 @@ public class CraftEnderDragonPart extends CraftComplexPart implements EnderDrago
+     public void resetMaxHealth() {
+         this.getParent().resetMaxHealth();
+     }
++
++    @Override
++    public void elementalDamage(double amount, ApplicationSource source) {
++        this.getParent().elementalDamage(amount, source);
++    }
  }
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
 index f0ce29d21fe9af803ce4e41b8c037b2ec5d1b124..3913acf2c1a74948547fde6391f59b9b384f2676 100644

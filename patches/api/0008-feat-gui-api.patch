@@ -1,0 +1,517 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Thu, 21 Sep 2023 02:01:07 +0800
+Subject: [PATCH] feat: gui api
+
+
+diff --git a/src/main/java/org/bukkit/Bukkit.java b/src/main/java/org/bukkit/Bukkit.java
+index 9ebdcd00b9cfb37efd7abdc169f0eac6ff7e430e..4528bdcebb446082b39a75c430a9750d408b192e 100644
+--- a/src/main/java/org/bukkit/Bukkit.java
++++ b/src/main/java/org/bukkit/Bukkit.java
+@@ -16,6 +16,7 @@ import java.util.function.Consumer;
+ import java.util.logging.Logger;
+ 
+ import net.deechael.command.ArtistCommandManager;
++import net.deechael.gui.GuiManager;
+ import net.deechael.nbt.NbtManager;
+ import net.deechael.protocol.ProtocolManager;
+ import net.deechael.elements.api.ElementManager;
+@@ -2782,6 +2783,10 @@ public final class Bukkit {
+     public static NbtManager getNbtManager() {
+         return server.getNbtManager();
+     }
++
++    public static GuiManager getGuiManager() {
++        return server.getGuiManager();
++    }
+     // Artist end
+ 
+     @NotNull
+diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
+index 1e1ec69d398a282d440d670308056794fa16d354..1f606841d4a764ef797e435282467ad65eede186 100644
+--- a/src/main/java/org/bukkit/Server.java
++++ b/src/main/java/org/bukkit/Server.java
+@@ -16,6 +16,7 @@ import java.util.function.Consumer;
+ import java.util.logging.Logger;
+ 
+ import net.deechael.command.ArtistCommandManager;
++import net.deechael.gui.GuiManager;
+ import net.deechael.nbt.NbtManager;
+ import net.deechael.protocol.ProtocolManager;
+ import net.deechael.elements.api.ElementManager;
+@@ -2425,5 +2426,7 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
+     ArtistCommandManager getArtistCommandManager();
+ 
+     NbtManager getNbtManager();
++
++    GuiManager getGuiManager();
+     // Artist end
+ }
+diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
+index f9dd00210c1762a40259f823aeb8d8a5ddc78e3e..c823ed9d6491f355537ac9bfde341dadd50c58c4 100644
+--- a/src/main/java/org/bukkit/entity/Player.java
++++ b/src/main/java/org/bukkit/entity/Player.java
+@@ -7,6 +7,8 @@ import java.time.Instant;
+ import java.util.Collection;
+ import java.util.Date;
+ import java.util.Map;
++
++import net.deechael.gui.GuiAudience;
+ import org.bukkit.BanEntry;
+ import org.bukkit.DyeColor;
+ import org.bukkit.Effect;
+@@ -51,7 +53,7 @@ import org.jetbrains.annotations.Nullable;
+ /**
+  * Represents a player, connected or not
+  */
+-public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginMessageRecipient, net.kyori.adventure.identity.Identified, net.kyori.adventure.bossbar.BossBarViewer, com.destroystokyo.paper.network.NetworkClient { // Paper
++public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginMessageRecipient, net.kyori.adventure.identity.Identified, net.kyori.adventure.bossbar.BossBarViewer, com.destroystokyo.paper.network.NetworkClient, GuiAudience { // Paper
+ 
+     // Paper start
+     @Override
+diff --git a/src/main/kotlin/net/deechael/gui/Clicker.kt b/src/main/kotlin/net/deechael/gui/Clicker.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..cd61ef6eb3d857067ef16d43bfc019ab71ac56b9
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/Clicker.kt
+@@ -0,0 +1,9 @@
++package net.deechael.gui
++
++import org.bukkit.inventory.ItemStack
++
++fun interface Clicker {
++
++    fun click(context: SlotContext, cursor: ItemStack?)
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/Closer.kt b/src/main/kotlin/net/deechael/gui/Closer.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..1fbb3ada0dc0e2947753f7698fb4b237496d5948
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/Closer.kt
+@@ -0,0 +1,9 @@
++package net.deechael.gui
++
++import net.deechael.gui.Scene
++
++fun interface Closer {
++
++    fun close(scene: Scene)
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/Gui.kt b/src/main/kotlin/net/deechael/gui/Gui.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..6bdeb32b38f2280164f4f7b05789968b14df628b
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/Gui.kt
+@@ -0,0 +1,11 @@
++package net.deechael.gui
++
++interface Gui {
++
++    fun audiences(): List<GuiAudience>
++
++    fun render(audience: GuiAudience): GuiRenderer
++
++    fun scene(audience: GuiAudience): Scene?
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/GuiAudience.kt b/src/main/kotlin/net/deechael/gui/GuiAudience.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..4c11318b82b601ef6cd1d3fef09f086202da18a5
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/GuiAudience.kt
+@@ -0,0 +1,7 @@
++package net.deechael.gui
++
++interface GuiAudience {
++
++    fun getGuiContext(): GuiContext
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/GuiContext.kt b/src/main/kotlin/net/deechael/gui/GuiContext.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f2827ca96c24bd36e4c1263a5a2b4d6e927b538b
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/GuiContext.kt
+@@ -0,0 +1,11 @@
++package net.deechael.gui
++
++interface GuiContext {
++
++    fun getScene(): Scene?
++
++    fun setScene(scene: Scene)
++
++    fun removeScene()
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/GuiManager.kt b/src/main/kotlin/net/deechael/gui/GuiManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..3c38908eaa728b5a320a0590cdeb372cc96c699e
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/GuiManager.kt
+@@ -0,0 +1,9 @@
++package net.deechael.gui
++
++import org.bukkit.plugin.Plugin
++
++interface GuiManager {
++
++    fun <T: Gui> createGui(plugin: Plugin, type: GuiType) : T
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/GuiRenderer.kt b/src/main/kotlin/net/deechael/gui/GuiRenderer.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..3aa5e3a278eb6852d157c78b03ded3bc8f47e8d8
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/GuiRenderer.kt
+@@ -0,0 +1,17 @@
++package net.deechael.gui
++
++import net.kyori.adventure.text.Component
++
++interface GuiRenderer {
++
++    fun gui(): Gui
++
++    fun audience(): GuiAudience
++
++    fun title(title: Component?): GuiRenderer
++
++    fun close(close: Closer): GuiRenderer
++
++    fun render(): Scene
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/GuiType.kt b/src/main/kotlin/net/deechael/gui/GuiType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..7867c4369611141c016a60c769822097d3025c5d
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/GuiType.kt
+@@ -0,0 +1,23 @@
++package net.deechael.gui
++
++import net.deechael.gui.anvil.AnvilGui
++import net.deechael.gui.normal.NormalGui
++import net.deechael.gui.pageable.PageableGui
++
++enum class GuiType(val guiClass: Class<out Gui>) {
++
++    NORMAL_1X9(NormalGui::class.java),
++    NORMAL_2X9(NormalGui::class.java),
++    NORMAL_3X9(NormalGui::class.java),
++    NORMAL_4X9(NormalGui::class.java),
++    NORMAL_5X9(NormalGui::class.java),
++    NORMAL_6X9(NormalGui::class.java),
++    PAGEABLE_1X9(PageableGui::class.java),
++    PAGEABLE_2X9(PageableGui::class.java),
++    PAGEABLE_3X9(PageableGui::class.java),
++    PAGEABLE_4X9(PageableGui::class.java),
++    PAGEABLE_5X9(PageableGui::class.java),
++    PAGEABLE_6X9(PageableGui::class.java),
++    ANVIL(AnvilGui::class.java)
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/Imager.kt b/src/main/kotlin/net/deechael/gui/Imager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..23a3bfa0e1d0b02b934ac66b26370211934aaf6c
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/Imager.kt
+@@ -0,0 +1,9 @@
++package net.deechael.gui
++
++import org.bukkit.inventory.ItemStack
++
++fun interface Imager {
++
++    fun render(context: SlotContext): ItemStack?
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/Scene.kt b/src/main/kotlin/net/deechael/gui/Scene.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..dba2f4c9c7d6ad10cb7778f3e4015d4d9a1213f3
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/Scene.kt
+@@ -0,0 +1,15 @@
++package net.deechael.gui
++
++import org.bukkit.inventory.Inventory
++
++interface Scene {
++
++    fun gui(): Gui
++
++    fun audience(): GuiAudience
++
++    fun refresh(keepPrevious: Boolean): GuiRenderer
++
++    fun asBukkit(): Inventory
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/Slot.kt b/src/main/kotlin/net/deechael/gui/Slot.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..3d2ba6f8cd861db12944e879ff3fe9f5a507bfa0
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/Slot.kt
+@@ -0,0 +1,9 @@
++package net.deechael.gui
++
++interface Slot {
++
++    fun image(image: Imager)
++
++    fun click(click: Clicker)
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/SlotContext.kt b/src/main/kotlin/net/deechael/gui/SlotContext.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..0c2e902eba3b4fcf85073c89bd75e272979fdaf8
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/SlotContext.kt
+@@ -0,0 +1,14 @@
++package net.deechael.gui
++
++import org.bukkit.event.inventory.ClickType
++import org.bukkit.event.inventory.InventoryAction
++
++interface SlotContext {
++
++    fun scene(): Scene
++
++    fun clickType(): ClickType?
++
++    fun action(): InventoryAction?
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/anvil/AnvilGui.kt b/src/main/kotlin/net/deechael/gui/anvil/AnvilGui.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..240a917cc251ffef8189c69f53ad92792240dd27
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/anvil/AnvilGui.kt
+@@ -0,0 +1,12 @@
++package net.deechael.gui.anvil
++
++import net.deechael.gui.Gui
++import net.deechael.gui.GuiAudience
++import net.deechael.gui.GuiRenderer
++import net.deechael.gui.Scene
++
++interface AnvilGui : Gui {
++
++    override fun render(audience: GuiAudience): AnvilGuiRenderer
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiRenderer.kt b/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiRenderer.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..c17eb1b850c4020cd502afbfeb272f847edde0b6
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiRenderer.kt
+@@ -0,0 +1,19 @@
++package net.deechael.gui.anvil
++
++import net.deechael.gui.GuiRenderer
++import net.deechael.gui.Slot
++
++interface AnvilGuiRenderer : GuiRenderer {
++
++    override fun gui(): AnvilGui
++
++    fun leftInput(builder: Slot.() -> Unit): AnvilGuiRenderer
++
++    fun rightInput(builder: Slot.() -> Unit): AnvilGuiRenderer
++
++    fun result(builder: Slot.() -> Unit): AnvilGuiRenderer
++
++    fun resulter(builder: AnvilResulter): AnvilGuiRenderer
++
++    override fun render(): AnvilGuiScene
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiScene.kt b/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiScene.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..ad19c0f5c30abebf25cf74f1f715cba70a3a15ef
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiScene.kt
+@@ -0,0 +1,12 @@
++package net.deechael.gui.anvil
++
++import net.deechael.gui.Scene
++import org.bukkit.inventory.ItemStack
++
++interface AnvilGuiScene: Scene {
++
++    var text: String
++
++    fun item(slot: AnvilSlot): ItemStack?
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/anvil/AnvilResulter.kt b/src/main/kotlin/net/deechael/gui/anvil/AnvilResulter.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..0224b5cd14fd9305da72bb8b685abd8779f938bb
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/anvil/AnvilResulter.kt
+@@ -0,0 +1,9 @@
++package net.deechael.gui.anvil
++
++import org.bukkit.inventory.ItemStack
++
++fun interface AnvilResulter {
++
++    fun result(context: AnvilSlotContext): ItemStack?
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/anvil/AnvilSlot.kt b/src/main/kotlin/net/deechael/gui/anvil/AnvilSlot.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..923c28688eb8f9aa29df6dfbdce56a11414b9ae0
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/anvil/AnvilSlot.kt
+@@ -0,0 +1,19 @@
++package net.deechael.gui.anvil
++
++enum class AnvilSlot(val slotIndex: Int) {
++
++    LEFT_INPUT(0),
++    RIGHT_INPUT(1),
++    RESULT(2);
++
++    companion object {
++        fun from(index: Int) : AnvilSlot {
++            return when (index) {
++                2 -> RESULT
++                1 -> RIGHT_INPUT
++                else -> LEFT_INPUT
++            }
++        }
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/anvil/AnvilSlotContext.kt b/src/main/kotlin/net/deechael/gui/anvil/AnvilSlotContext.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..c6634c7871e374c6853d183f49a3151bc7b838c1
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/anvil/AnvilSlotContext.kt
+@@ -0,0 +1,17 @@
++package net.deechael.gui.anvil
++
++import net.deechael.gui.SlotContext
++import org.bukkit.inventory.ItemStack
++
++interface AnvilSlotContext : SlotContext {
++
++    fun slot(): AnvilSlot
++
++    fun leftInput(): ItemStack?
++
++    fun rightInput(): ItemStack?
++
++    fun result(): ItemStack?
++
++    fun text(): String
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/normal/NormalGui.kt b/src/main/kotlin/net/deechael/gui/normal/NormalGui.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..aee9ea24850975988cffb2331db93d3f9b3ac7d3
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/normal/NormalGui.kt
+@@ -0,0 +1,12 @@
++package net.deechael.gui.normal
++
++import net.deechael.gui.Gui
++import net.deechael.gui.GuiAudience
++
++interface NormalGui : Gui {
++
++    fun lines(): Int
++
++    override fun render(audience: GuiAudience): NormalGuiRenderer
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/normal/NormalGuiRenderer.kt b/src/main/kotlin/net/deechael/gui/normal/NormalGuiRenderer.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..203d807588b1e693cdc60512061fcf9f2b2d0b42
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/normal/NormalGuiRenderer.kt
+@@ -0,0 +1,15 @@
++package net.deechael.gui.normal
++
++import net.deechael.gui.GuiRenderer
++import net.deechael.gui.Scene
++import net.deechael.gui.Slot
++
++interface NormalGuiRenderer: GuiRenderer {
++
++    override fun gui(): NormalGui
++
++    fun slot(raw: Int, builder: Slot.() -> Unit)
++
++    override fun render(): NormalGuiScene
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/normal/NormalGuiScene.kt b/src/main/kotlin/net/deechael/gui/normal/NormalGuiScene.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..ae0b48118ab8fd8bb74de13fae75b1c0fedb7f60
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/normal/NormalGuiScene.kt
+@@ -0,0 +1,12 @@
++package net.deechael.gui.normal
++
++import net.deechael.gui.Scene
++import org.bukkit.inventory.ItemStack
++
++interface NormalGuiScene : Scene {
++
++    override fun refresh(keepPrevious: Boolean): NormalGuiRenderer
++
++    fun item(raw: Int): ItemStack?
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/normal/NormalSlotContext.kt b/src/main/kotlin/net/deechael/gui/normal/NormalSlotContext.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..e5f297369d8b008ac64d3c4827e7203ecf6e7870
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/normal/NormalSlotContext.kt
+@@ -0,0 +1,9 @@
++package net.deechael.gui.normal
++
++import net.deechael.gui.SlotContext
++
++interface NormalSlotContext : SlotContext {
++
++    fun slot(): Int
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/pageable/PageableGui.kt b/src/main/kotlin/net/deechael/gui/pageable/PageableGui.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..c8b379712261616df7d40497d0cdbb7e733dfddd
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/pageable/PageableGui.kt
+@@ -0,0 +1,6 @@
++package net.deechael.gui.pageable
++
++import net.deechael.gui.Gui
++
++interface PageableGui : Gui {
++}
+\ No newline at end of file

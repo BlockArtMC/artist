@@ -1,0 +1,941 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Thu, 21 Sep 2023 02:01:17 +0800
+Subject: [PATCH] feat: gui impl
+
+
+diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
+index b382da838acc04a1c5d89064b4fa43bcdd38ae71..9b71851f8012726d5863bbe5cb06b34953885baf 100644
+--- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
++++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
+@@ -18,6 +18,8 @@ import java.util.Optional;
+ import java.util.OptionalInt;
+ import java.util.Set;
+ import javax.annotation.Nullable;
++
++import net.deechael.artist.gui.ArtistGuiContext;
+ import net.minecraft.BlockUtil;
+ import net.minecraft.ChatFormatting;
+ import net.minecraft.CrashReport;
+@@ -281,6 +283,7 @@ public class ServerPlayer extends Player {
+ 
+     private final java.util.concurrent.atomic.AtomicReference<io.papermc.paper.chunk.system.RegionizedPlayerChunkLoader.ViewDistances> viewDistances = new java.util.concurrent.atomic.AtomicReference<>(new io.papermc.paper.chunk.system.RegionizedPlayerChunkLoader.ViewDistances(-1, -1, -1));
+     public io.papermc.paper.chunk.system.RegionizedPlayerChunkLoader.PlayerChunkLoaderData chunkLoader;
++    public final ArtistGuiContext guiContext = new ArtistGuiContext(this);
+ 
+     public io.papermc.paper.chunk.system.RegionizedPlayerChunkLoader.ViewDistances getViewDistances() {
+         return this.viewDistances.get();
+@@ -1665,6 +1668,7 @@ public class ServerPlayer extends Player {
+         // copied from below
+         this.connection.send(new ClientboundContainerClosePacket(this.containerMenu.containerId));
+         this.containerMenu = this.inventoryMenu;
++        this.guiContext.removeScene();
+         // do not run close logic
+     }
+     // Paper end - special close for unloaded inventory
+@@ -1674,6 +1678,7 @@ public class ServerPlayer extends Player {
+         this.containerMenu.removed(this);
+         this.inventoryMenu.transferState(this.containerMenu);
+         this.containerMenu = this.inventoryMenu;
++        this.guiContext.removeScene();
+     }
+ 
+     public void setPlayerInput(float sidewaysSpeed, float forwardSpeed, boolean jumping, boolean sneaking) {
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 191b1c4b6963ab866f0507fc785ff3b4540651c2..1c6149ac20c9ebeeae132416ff7d8130568cdf07 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -50,11 +50,13 @@ import net.deechael.artist.command.ArtistCommandManagerImpl;
+ import net.deechael.artist.command.ArtistCommandWrapper;
+ import net.deechael.artist.command.LiteralCommandImpl;
+ import net.deechael.artist.element.ArtistElementManager;
++import net.deechael.artist.gui.ArtistGuiManager;
+ import net.deechael.artist.nbt.ArtistNbtManager;
+ import net.deechael.artist.protocol.ArtistProtocolManager;
+ import net.deechael.artist.skill.ArtistSkillManager;
+ import net.deechael.command.ArtistCommandManager;
+ import net.deechael.command.LiteralCommand;
++import net.deechael.gui.GuiManager;
+ import net.deechael.nbt.NbtManager;
+ import net.deechael.protocol.ProtocolManager;
+ import net.minecraft.advancements.Advancement;
+@@ -3202,4 +3204,9 @@ public final class CraftServer implements Server {
+         return ArtistNbtManager.INSTANCE;
+     }
+ 
++    @Override
++    public GuiManager getGuiManager() {
++        return ArtistGuiManager.INSTANCE;
++    }
++
+ }
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+index 4e6fea7cf11b1e29ae7c7098a6f5d06bb5f93cc2..5f7634b7164da08adb66f767c576a11933931821 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+@@ -32,6 +32,8 @@ import java.util.WeakHashMap;
+ import java.util.logging.Level;
+ import java.util.logging.Logger;
+ import javax.annotation.Nullable;
++
++import net.deechael.gui.GuiContext;
+ import net.minecraft.advancements.AdvancementProgress;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.core.Holder;
+@@ -3267,4 +3269,14 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+         return this.spigot;
+     }
+     // Spigot end
++
++    // Artist start
++
++    @NotNull
++    @Override
++    public GuiContext getGuiContext() {
++        return this.getHandle().guiContext;
++    }
++
++    // Artist end
+ }
+diff --git a/src/main/kotlin/net/deechael/artist/gui/ArtistGui.kt b/src/main/kotlin/net/deechael/artist/gui/ArtistGui.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..5efc5bfc3d8a2656185148d8c5e34541bd8f7909
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/ArtistGui.kt
+@@ -0,0 +1,26 @@
++package net.deechael.artist.gui
++
++import net.deechael.gui.Gui
++import net.deechael.gui.GuiAudience
++import net.deechael.gui.Scene
++import org.bukkit.Bukkit
++import org.bukkit.plugin.Plugin
++
++abstract class ArtistGui(val plugin: Plugin) : Gui {
++
++    override fun audiences(): List<GuiAudience> {
++        return Bukkit.getOnlinePlayers().stream()
++            .filter {
++                val scene = it.getGuiContext().getScene() ?: return@filter false
++                return@filter scene.gui() == this
++            }.toList()
++    }
++
++    override fun scene(audience: GuiAudience): Scene? {
++        val scene = audience.getGuiContext().getScene() ?: return null
++        if (scene.gui() != this)
++            return null
++        return scene
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiContext.kt b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiContext.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..6f3930c70402883079d65f106b9113378f52ad2f
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiContext.kt
+@@ -0,0 +1,27 @@
++package net.deechael.artist.gui
++
++import net.deechael.gui.GuiContext
++import net.deechael.gui.Scene
++import net.minecraft.server.level.ServerPlayer
++
++class ArtistGuiContext(private val player: ServerPlayer): GuiContext {
++
++    private var scene: Scene? = null
++
++    override fun getScene(): Scene? {
++        return this.scene
++    }
++
++    override fun setScene(scene: Scene) {
++        this.removeScene()
++        this.scene = scene
++        (scene as ArtistScene).open(this.player)
++    }
++
++    override fun removeScene() {
++        if (this.player.containerMenu != this.player.inventoryMenu)
++            this.player.closeContainer()
++        this.scene = null
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..d770086728ce557ddd731c3954f735cc5a9c8975
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
+@@ -0,0 +1,27 @@
++package net.deechael.artist.gui
++
++import net.deechael.artist.gui.normal.ArtistNormalGui
++import net.deechael.gui.Gui
++import net.deechael.gui.GuiManager
++import net.deechael.gui.GuiType
++import net.deechael.gui.normal.NormalGui
++import org.bukkit.plugin.Plugin
++
++object ArtistGuiManager : GuiManager {
++
++    private val interfaceToImplements = mapOf(
++        pairOf(NormalGui::class.java, ArtistNormalGui::class.java)
++    )
++
++    @Suppress("UNCHECKED_CAST")
++    override fun <T : Gui> createGui(plugin: Plugin, type: GuiType): T {
++        val guiImpl = interfaceToImplements[type.guiClass]!!
++        val construct = guiImpl.getConstructor(Plugin::class.java, GuiType::class.java)
++        return construct.newInstance(plugin, type) as T
++    }
++
++}
++
++fun <K, V> pairOf(key: K, value: V): Pair<K, V> {
++    return Pair(key, value)
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiRenderer.kt b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiRenderer.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..dcd394d847e83943ad623d47683ea4a97e030892
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiRenderer.kt
+@@ -0,0 +1,35 @@
++package net.deechael.artist.gui
++
++import net.deechael.gui.*
++import net.kyori.adventure.text.Component
++import org.bukkit.plugin.Plugin
++
++abstract class ArtistGuiRenderer(
++    val plugin: Plugin,
++    private val gui: Gui,
++    private val audience: GuiAudience
++) : GuiRenderer {
++
++    var title: Component? = null
++        private set
++    var close: Closer = Closer {}
++        private set
++
++    override fun gui(): Gui {
++        return this.gui
++    }
++
++    override fun audience(): GuiAudience {
++        return this.audience
++    }
++
++    override fun title(title: Component?): GuiRenderer {
++        this.title = title
++        return this
++    }
++
++    override fun close(close: Closer): GuiRenderer {
++        return this
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/ArtistScene.kt b/src/main/kotlin/net/deechael/artist/gui/ArtistScene.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..57da1c1c82adf745192cc9d09da32942d38e633d
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/ArtistScene.kt
+@@ -0,0 +1,25 @@
++package net.deechael.artist.gui
++
++import net.deechael.gui.Gui
++import net.deechael.gui.GuiAudience
++import net.deechael.gui.GuiRenderer
++import net.deechael.gui.Scene
++import net.minecraft.server.level.ServerPlayer
++import org.bukkit.inventory.InventoryHolder
++
++abstract class ArtistScene(
++    protected val gui: Gui,
++    protected val audience: GuiAudience
++) : Scene, InventoryHolder {
++
++    override fun gui(): Gui {
++        return this.gui
++    }
++
++    override fun audience(): GuiAudience {
++        return this.audience
++    }
++
++    abstract fun open(player: ServerPlayer)
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/ArtistSlot.kt b/src/main/kotlin/net/deechael/artist/gui/ArtistSlot.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..bde5a581f5e0023a8f0210010d9c3ffd39169640
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/ArtistSlot.kt
+@@ -0,0 +1,22 @@
++package net.deechael.artist.gui
++
++import net.deechael.gui.Clicker
++import net.deechael.gui.Imager
++import net.deechael.gui.Slot
++
++class ArtistSlot : Slot {
++
++    var image: Imager = Imager { null }
++        private set
++    var click: Clicker = Clicker { _, _ -> }
++        private set
++
++    override fun image(image: Imager) {
++        this.image = image
++    }
++
++    override fun click(click: Clicker) {
++        this.click = click
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/ArtistSlotContext.kt b/src/main/kotlin/net/deechael/artist/gui/ArtistSlotContext.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..7f720a58660cc4e60e848dc19cd397fc0f8e82aa
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/ArtistSlotContext.kt
+@@ -0,0 +1,26 @@
++package net.deechael.artist.gui
++
++import net.deechael.gui.Scene
++import net.deechael.gui.SlotContext
++import org.bukkit.event.inventory.ClickType
++import org.bukkit.event.inventory.InventoryAction
++
++abstract class ArtistSlotContext(
++    private val scene: Scene,
++    private val clickType: ClickType?,
++    private val action: InventoryAction?
++) : SlotContext {
++
++    override fun scene(): Scene {
++        return this.scene
++    }
++
++    override fun clickType(): ClickType? {
++        return this.clickType
++    }
++
++    override fun action(): InventoryAction? {
++        return this.action
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..7a3d9702c8af536df93c28dd59c45e1eae7a8829
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt
+@@ -0,0 +1,15 @@
++package net.deechael.artist.gui.anvil
++
++import net.deechael.artist.gui.ArtistGui
++import net.deechael.gui.GuiAudience
++import net.deechael.gui.anvil.AnvilGui
++import net.deechael.gui.anvil.AnvilGuiRenderer
++import org.bukkit.plugin.Plugin
++
++class ArtistAnvilGui(plugin: Plugin) : ArtistGui(plugin), AnvilGui {
++
++    override fun render(audience: GuiAudience): AnvilGuiRenderer {
++        TODO("Not yet implemented")
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiRenderer.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiRenderer.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..a8a0ece371daca781303e8d5e23cd504b1436f79
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiRenderer.kt
+@@ -0,0 +1,56 @@
++package net.deechael.artist.gui.anvil
++
++import net.deechael.artist.gui.ArtistGuiRenderer
++import net.deechael.artist.gui.ArtistSlot
++import net.deechael.artist.gui.normal.ArtistNormalGuiScene
++import net.deechael.gui.Gui
++import net.deechael.gui.GuiAudience
++import net.deechael.gui.Slot
++import net.deechael.gui.anvil.AnvilGui
++import net.deechael.gui.anvil.AnvilGuiRenderer
++import net.deechael.gui.anvil.AnvilGuiScene
++import net.deechael.gui.anvil.AnvilResulter
++import org.bukkit.plugin.Plugin
++
++class ArtistAnvilGuiRenderer(
++    plugin: Plugin,
++    gui: Gui,
++    audience: GuiAudience,
++    private val artistAnvilGuiScene: ArtistAnvilGuiScene?) : ArtistGuiRenderer(plugin, gui, audience), AnvilGuiRenderer {
++
++    private var leftInput: ArtistSlot? = null
++    private var rightInput: ArtistSlot? = null
++    private var result: ArtistSlot? = null
++    private var resulter: AnvilResulter? = null
++
++    override fun gui(): AnvilGui {
++        return super.gui() as AnvilGui
++    }
++
++    override fun leftInput(builder: Slot.() -> Unit): AnvilGuiRenderer {
++        this.leftInput = ArtistSlot().apply(builder)
++        return this
++    }
++
++    override fun rightInput(builder: Slot.() -> Unit): AnvilGuiRenderer {
++        this.rightInput = ArtistSlot().apply(builder)
++        return this
++    }
++
++    override fun result(builder: Slot.() -> Unit): AnvilGuiRenderer {
++        this.result = ArtistSlot().apply(builder)
++        return this
++    }
++
++    override fun resulter(builder: AnvilResulter): AnvilGuiRenderer {
++        this.resulter = builder
++        return this
++    }
++
++    override fun render(): AnvilGuiScene {
++        val scene = this.artistAnvilGuiScene ?: ArtistAnvilGuiScene(this.title, this.gui(), this.audience())
++        scene.rerender(this.title, this.close, this.leftInput, this.rightInput, this.result, this.resulter)
++        return scene
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f56105b85d5df471c5607919955d9423a76148ff
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt
+@@ -0,0 +1,138 @@
++package net.deechael.artist.gui.anvil
++
++import io.papermc.paper.adventure.PaperAdventure
++import net.deechael.artist.gui.ArtistScene
++import net.deechael.artist.gui.ArtistSlot
++import net.deechael.artist.gui.normal.ArtistNormalSlotContext
++import net.deechael.gui.*
++import net.deechael.gui.anvil.AnvilGuiScene
++import net.deechael.gui.anvil.AnvilResulter
++import net.deechael.gui.anvil.AnvilSlot
++import net.kyori.adventure.text.Component
++import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket
++import net.minecraft.server.level.ServerPlayer
++import net.minecraft.world.inventory.MenuType
++import org.bukkit.Bukkit
++import org.bukkit.craftbukkit.entity.CraftPlayer
++import org.bukkit.craftbukkit.event.CraftEventFactory
++import org.bukkit.event.EventHandler
++import org.bukkit.event.HandlerList
++import org.bukkit.event.Listener
++import org.bukkit.event.inventory.InventoryAction
++import org.bukkit.event.inventory.InventoryClickEvent
++import org.bukkit.event.inventory.InventoryCloseEvent
++import org.bukkit.inventory.Inventory
++import org.bukkit.inventory.ItemStack
++import org.bukkit.scheduler.BukkitRunnable
++import java.util.*
++
++class ArtistAnvilGuiScene(title: Component?, gui: Gui, audience: GuiAudience) : ArtistScene(gui, audience), AnvilGuiScene, Listener {
++
++    private val fakeAnvil: FakeAnvil
++    private val bukkitInventory: Inventory
++
++    private var closer: Closer = Closer {}
++    private var leftInput: ArtistSlot? = null
++    private var rightInput: ArtistSlot? = null
++    private var result: ArtistSlot? = null
++    private var resulter: AnvilResulter? = null
++
++    override var text: String
++        get() = fakeAnvil.getText()
++        set(value) { fakeAnvil.setText(value) }
++
++    init {
++        this.fakeAnvil = FakeAnvil(this,
++            (this.audience as CraftPlayer).handle!!,
++            this.resulter ?: AnvilResulter { null },
++            title ?: Component.empty()
++        )
++        this.bukkitInventory = this.fakeAnvil.getBukkitInventory()
++        this.audience.getGuiContext().setScene(this)
++        Bukkit.getPluginManager().registerEvents(this, this.gui().plugin)
++    }
++
++    override fun gui(): ArtistAnvilGui {
++        return super.gui() as ArtistAnvilGui
++    }
++
++    override fun item(slot: AnvilSlot): ItemStack? {
++        return bukkitInventory.getItem(slot.slotIndex)
++    }
++
++    override fun getInventory(): Inventory {
++        return this.bukkitInventory
++    }
++
++    override fun open(player: ServerPlayer) {
++        CraftEventFactory.handleInventoryCloseEvent(player, InventoryCloseEvent.Reason.OPEN_NEW)
++        player.containerMenu = player.inventoryMenu
++        player.connection.send(ClientboundOpenScreenPacket(
++            this.fakeAnvil.containerId,
++            MenuType.ANVIL,
++            PaperAdventure.asVanilla(this.fakeAnvil.firstTitle)
++        ))
++        player.containerMenu = this.fakeAnvil
++        player.initMenu(this.fakeAnvil)
++    }
++
++    override fun refresh(keepPrevious: Boolean): GuiRenderer {
++        return ArtistAnvilGuiRenderer(this.gui().plugin, this.gui, this.audience, this)
++    }
++
++    fun rerender(title: Component?, closer: Closer, leftInput: ArtistSlot?, rightInput: ArtistSlot?, result: ArtistSlot?, resulter: AnvilResulter?) {
++        if (title != null) {
++            val serverPlayer = (this.audience as CraftPlayer).handle
++            val titlePacket = ClientboundOpenScreenPacket(
++                serverPlayer.containerMenu.containerId,
++                MenuType.ANVIL,
++                PaperAdventure.asVanilla(title)
++            )
++            serverPlayer.connection.send(titlePacket)
++        }
++        this.closer = closer
++        this.leftInput = leftInput
++        this.rightInput = rightInput
++        this.result = result
++        this.resulter = resulter
++        this.fakeAnvil.anvilResulter = resulter
++        this.bukkitInventory.clear()
++        this.bukkitInventory.setItem(0, leftInput!!.image.render(ArtistAnvilSlotContext(AnvilSlot.LEFT_INPUT, this, null, null)))
++        this.bukkitInventory.setItem(1, rightInput!!.image.render(ArtistAnvilSlotContext(AnvilSlot.RESULT, this, null, null)))
++    }
++
++    override fun asBukkit(): Inventory {
++        return this.bukkitInventory
++    }
++
++    @EventHandler
++    fun event(event: InventoryClickEvent) {
++        if (event.view.topInventory != this.bukkitInventory)
++            return
++        if (Objects.equals(event.clickedInventory, event.view.bottomInventory) && event.action == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
++            event.isCancelled = true
++            return
++        }
++        if (!Objects.equals(event.clickedInventory, event.view.topInventory))
++            return
++        event.isCancelled = true
++        object : BukkitRunnable() {
++            override fun run() {
++                val context = ArtistAnvilSlotContext(AnvilSlot.from(event.rawSlot), this@ArtistAnvilGuiScene, event.click, event.action)
++                when (event.rawSlot) {
++                    0 -> if (leftInput != null) leftInput!!.click.click(context, event.cursor)
++                    1 -> if (rightInput != null) rightInput!!.click.click(context, event.cursor)
++                    2 -> if (result != null) result!!.click.click(context, event.cursor)
++                }
++            }
++        }.runTaskLater(this.gui().plugin, 1L)
++    }
++
++    @EventHandler
++    fun event(event: InventoryCloseEvent) {
++        if (event.view.topInventory != this.bukkitInventory)
++            return
++        HandlerList.unregisterAll(this)
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilSlotContext.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilSlotContext.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..3b3f0c2e3c88682d9a7254c8394c16266241511d
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilSlotContext.kt
+@@ -0,0 +1,42 @@
++package net.deechael.artist.gui.anvil
++
++import net.deechael.artist.gui.ArtistSlotContext
++import net.deechael.gui.Scene
++import net.deechael.gui.anvil.AnvilGuiScene
++import net.deechael.gui.anvil.AnvilSlot
++import net.deechael.gui.anvil.AnvilSlotContext
++import org.bukkit.event.inventory.ClickType
++import org.bukkit.event.inventory.InventoryAction
++import org.bukkit.inventory.ItemStack
++
++class ArtistAnvilSlotContext(
++    private val slot: AnvilSlot,
++    scene: Scene,
++    clickType: ClickType?,
++    action: InventoryAction?
++) : ArtistSlotContext(
++    scene,
++    clickType,
++    action
++), AnvilSlotContext {
++
++    override fun text(): String {
++        return (scene() as AnvilGuiScene).text
++    }
++
++    override fun slot(): AnvilSlot {
++        return this.slot
++    }
++
++    override fun leftInput(): ItemStack? {
++        return this.scene().asBukkit().getItem(0)
++    }
++
++    override fun rightInput(): ItemStack? {
++        return this.scene().asBukkit().getItem(1)
++    }
++
++    override fun result(): ItemStack? {
++        return this.scene().asBukkit().getItem(2)
++    }
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/FakeAnvil.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/FakeAnvil.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..a7dd8f5893cd27ada93dd9eeb199de41a7fbca50
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/anvil/FakeAnvil.kt
+@@ -0,0 +1,60 @@
++package net.deechael.artist.gui.anvil
++
++import net.deechael.gui.anvil.AnvilGuiScene
++import net.deechael.gui.anvil.AnvilResulter
++import net.deechael.gui.anvil.AnvilSlot
++import net.kyori.adventure.text.Component
++import net.minecraft.server.level.ServerPlayer
++import net.minecraft.world.Container
++import net.minecraft.world.entity.player.Player
++import net.minecraft.world.inventory.AnvilMenu
++import net.minecraft.world.inventory.ContainerLevelAccess
++import net.minecraft.world.inventory.Slot
++import net.minecraft.world.item.ItemStack
++import org.bukkit.craftbukkit.inventory.CraftItemStack
++import org.bukkit.inventory.Inventory
++
++class FakeAnvil(
++    private val scene: AnvilGuiScene,
++    private val serverPlayer: ServerPlayer,
++    var anvilResulter: AnvilResulter?,
++    val firstTitle: Component
++) : AnvilMenu(serverPlayer.nextContainerCounter(), serverPlayer.inventory, ContainerLevelAccess.create(serverPlayer.level(), serverPlayer.onPos)) {
++
++    init {
++        this.checkReachable = false
++    }
++
++    override fun createResult() {
++        val output: Slot = this.getSlot(2)
++        if (this.anvilResulter != null) {
++            val result = this.anvilResulter!!.result(ArtistAnvilSlotContext(AnvilSlot.RESULT, this.scene, null, null))
++            if (result != null) {
++                output.set(CraftItemStack.asNMSCopy(result))
++            } else {
++                output.set(ItemStack.EMPTY)
++            }
++        } else {
++            output.set(this.getSlot(0).item.copy())
++        }
++        this.cost.set(0)
++        this.sendAllDataToRemote()
++        this.broadcastChanges()
++    }
++
++    override fun clearContainer(player: Player, inventory: Container) {
++    }
++
++    fun getText(): String {
++        return this.itemName ?: ""
++    }
++
++    fun setText(text: String) {
++        this.itemName = text
++    }
++
++    fun getBukkitInventory(): Inventory {
++        return this.bukkitView.topInventory
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGui.kt b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGui.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..8711c7b7d14acda99d967abf626879d0435350b3
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGui.kt
+@@ -0,0 +1,30 @@
++package net.deechael.artist.gui.normal
++
++import net.deechael.artist.gui.ArtistGui
++import net.deechael.gui.GuiAudience
++import net.deechael.gui.GuiType
++import net.deechael.gui.normal.NormalGui
++import net.deechael.gui.normal.NormalGuiRenderer
++import org.bukkit.plugin.Plugin
++
++class ArtistNormalGui(plugin: Plugin, type: GuiType) : ArtistGui(plugin), NormalGui {
++
++    private val lines: Int
++
++    init {
++        this.lines = type.name.substring(8, 9).toInt()
++    }
++
++    override fun lines(): Int {
++        return this.lines
++    }
++
++    override fun render(audience: GuiAudience): NormalGuiRenderer {
++        return ArtistNormalGuiRenderer(
++            this.plugin,
++            this,
++            audience
++        )
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiRenderer.kt b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiRenderer.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f2594d03ec489c17252fbf905e85068bcb6eba59
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiRenderer.kt
+@@ -0,0 +1,39 @@
++package net.deechael.artist.gui.normal
++
++import net.deechael.artist.gui.ArtistGuiRenderer
++import net.deechael.artist.gui.ArtistSlot
++import net.deechael.gui.GuiAudience
++import net.deechael.gui.Slot
++import net.deechael.gui.normal.NormalGui
++import net.deechael.gui.normal.NormalGuiRenderer
++import net.deechael.gui.normal.NormalGuiScene
++import org.bukkit.plugin.Plugin
++
++class ArtistNormalGuiRenderer(
++    plugin: Plugin,
++    gui: NormalGui,
++    audience: GuiAudience,
++    private val previousScene: ArtistNormalGuiScene? = null
++) : ArtistGuiRenderer(
++    plugin,
++    gui,
++    audience
++), NormalGuiRenderer {
++
++    private val slots = mutableMapOf<Int, ArtistSlot>()
++
++    override fun gui(): NormalGui {
++        return super.gui() as NormalGui
++    }
++
++    override fun slot(raw: Int, builder: Slot.() -> Unit) {
++        this.slots[raw] = ArtistSlot().apply(builder)
++    }
++
++    override fun render(): NormalGuiScene {
++        val scene = this.previousScene ?: ArtistNormalGuiScene(this.title, this.gui(), this.audience())
++        scene.rerender(this.title, this.close, this.slots)
++        return scene
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiScene.kt b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiScene.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..848299f5d1a64a21c241358213ba36b0cebfae10
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiScene.kt
+@@ -0,0 +1,142 @@
++package net.deechael.artist.gui.normal
++
++import io.papermc.paper.adventure.PaperAdventure
++import net.deechael.artist.gui.ArtistScene
++import net.deechael.artist.gui.ArtistSlot
++import net.deechael.gui.*
++import net.deechael.gui.normal.NormalGui
++import net.deechael.gui.normal.NormalGuiRenderer
++import net.deechael.gui.normal.NormalGuiScene
++import net.kyori.adventure.text.Component
++import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket
++import net.minecraft.server.level.ServerPlayer
++import net.minecraft.world.inventory.ChestMenu
++import net.minecraft.world.inventory.MenuType
++import org.bukkit.Bukkit
++import org.bukkit.craftbukkit.entity.CraftPlayer
++import org.bukkit.event.EventHandler
++import org.bukkit.event.HandlerList
++import org.bukkit.event.Listener
++import org.bukkit.event.inventory.InventoryAction
++import org.bukkit.event.inventory.InventoryClickEvent
++import org.bukkit.event.inventory.InventoryCloseEvent
++import org.bukkit.inventory.Inventory
++import org.bukkit.inventory.ItemStack
++import org.bukkit.scheduler.BukkitRunnable
++import java.util.Objects
++
++class ArtistNormalGuiScene(
++    title: Component?,
++    gui: NormalGui,
++    audience: GuiAudience
++) : ArtistScene(
++    gui,
++    audience
++), NormalGuiScene, Listener {
++
++    private val bukkitInventory: Inventory
++
++    private val menuType: MenuType<ChestMenu>
++
++    private var closer: Closer = Closer {}
++    private val slots = mutableMapOf<Int, ArtistSlot>()
++
++    init {
++        this.gui as ArtistNormalGui
++        if (this.gui.lines() == 1) {
++            this.menuType = MenuType.GENERIC_9x1
++        } else if (this.gui.lines() == 2) {
++            this.menuType = MenuType.GENERIC_9x2
++        } else if (this.gui.lines() == 3) {
++            this.menuType = MenuType.GENERIC_9x3
++        } else if (this.gui.lines() == 4) {
++            this.menuType = MenuType.GENERIC_9x4
++        } else if (this.gui.lines() == 5) {
++            this.menuType = MenuType.GENERIC_9x5
++        } else {
++            this.menuType = MenuType.GENERIC_9x6
++        }
++        this.bukkitInventory = if (title == null) {
++            Bukkit.createInventory(this, this.gui.lines() * 9)
++        } else {
++            Bukkit.createInventory(this, this.gui.lines() * 9, title)
++        }
++        this.audience.getGuiContext().setScene(this)
++        Bukkit.getPluginManager().registerEvents(this, this.gui.plugin)
++    }
++
++    override fun gui(): ArtistNormalGui {
++        return super.gui() as ArtistNormalGui
++    }
++
++    override fun item(raw: Int): ItemStack? {
++        return bukkitInventory.getItem(raw)
++    }
++
++    override fun open(player: ServerPlayer) {
++        player.bukkitEntity.openInventory(this.bukkitInventory)
++    }
++
++    override fun refresh(keepPrevious: Boolean): NormalGuiRenderer {
++        this.gui as ArtistNormalGui
++        return ArtistNormalGuiRenderer(this.gui.plugin, this.gui, this.audience, this)
++    }
++
++    fun rerender(title: Component?, closer: Closer, slots: Map<Int, ArtistSlot>) {
++        if (title != null) {
++            val serverPlayer = (this.audience as CraftPlayer).handle
++            val titlePacket = ClientboundOpenScreenPacket(
++                serverPlayer.containerMenu.containerId,
++                this.menuType,
++                PaperAdventure.asVanilla(title)
++            )
++            serverPlayer.connection.send(titlePacket)
++        }
++        this.closer = closer
++        this.bukkitInventory.clear()
++        this.slots.clear()
++        this.slots.putAll(slots)
++        this.slots.forEach { (index, slot) ->
++            val context = ArtistNormalSlotContext(index, this, null, null)
++            val item = slot.image.render(context) ?: return@forEach
++            this.bukkitInventory.setItem(index, item)
++        }
++    }
++
++    override fun asBukkit(): Inventory {
++        return this.bukkitInventory
++    }
++
++    override fun getInventory(): Inventory {
++        return this.bukkitInventory
++    }
++
++    @EventHandler
++    fun event(event: InventoryClickEvent) {
++        if (event.view.topInventory.holder != this)
++            return
++        if (Objects.equals(event.clickedInventory, event.view.bottomInventory) && event.action == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
++            event.isCancelled = true
++            return
++        }
++        if (!Objects.equals(event.clickedInventory, event.view.topInventory))
++            return
++        event.isCancelled = true
++        if (!this.slots.containsKey(event.rawSlot))
++            return
++        object : BukkitRunnable() {
++            override fun run() {
++                val context = ArtistNormalSlotContext(event.rawSlot, this@ArtistNormalGuiScene, event.click, event.action)
++                this@ArtistNormalGuiScene.slots[event.rawSlot]!!.click.click(context, event.cursor)
++            }
++        }.runTaskLater(this.gui().plugin, 1L)
++    }
++
++    @EventHandler
++    fun event(event: InventoryCloseEvent) {
++        if (event.inventory.holder != this)
++            return
++        HandlerList.unregisterAll(this)
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalSlotContext.kt b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalSlotContext.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..19bd7524b5fd358ce30f151c570679556cb89e1e
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalSlotContext.kt
+@@ -0,0 +1,20 @@
++package net.deechael.artist.gui.normal
++
++import net.deechael.artist.gui.ArtistSlotContext
++import net.deechael.gui.Scene
++import net.deechael.gui.normal.NormalSlotContext
++import org.bukkit.event.inventory.ClickType
++import org.bukkit.event.inventory.InventoryAction
++
++class ArtistNormalSlotContext(
++    private val slot: Int,
++    scene: Scene,
++    clickType: ClickType?,
++    action: InventoryAction?
++) : ArtistSlotContext(scene, clickType, action), NormalSlotContext {
++
++    override fun slot(): Int {
++        return this.slot
++    }
++
++}
+\ No newline at end of file

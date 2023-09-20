@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Wed, 20 Sep 2023 21:43:11 +0800
+Subject: [PATCH] fix: npe when setting tag for block
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java b/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java
+index 4ce165c53adece0232ff0b626e9775d188ffd17d..2c29231abe39eba8dc95a33eafc8c5390a2c51b6 100644
+--- a/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java
++++ b/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java
+@@ -766,7 +766,7 @@ public class CraftBlock implements Block {
+         BlockEntity blockEntity = this.world.getBlockEntity(this.position);
+         if (blockEntity == null)
+             return;
+-        blockEntity.load(nbtTag == null ? null : (CompoundTag) ((ArtistNbtObject) nbtTag).toNms());
++        blockEntity.load(nbtTag == null ? new CompoundTag() : (CompoundTag) ((ArtistNbtObject) nbtTag).toNms());
+     }
+ 
+     @Override

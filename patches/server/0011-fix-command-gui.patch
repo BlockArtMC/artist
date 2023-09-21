@@ -1,0 +1,77 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Thu, 21 Sep 2023 22:23:01 +0800
+Subject: [PATCH] fix: command & gui
+
+
+diff --git a/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt b/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt
+index a06e21e91c3ae36af78ecf81e272d80e502a864f..b24891233c850827960ae4e53daa0fc721021e71 100644
+--- a/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt
++++ b/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt
+@@ -9,7 +9,7 @@ import org.bukkit.command.CommandSender
+ 
+ class ArgumentCommandImpl(private val name: String, private val argumentType: ArgumentType<*>): CommandImpl(), ArgumentCommand {
+ 
+-    private var suggestion: SuggestionProvider.() -> Unit = {}
++    private var suggestion: (SuggestionProvider.() -> Unit)? = {}
+     private var requirement: (CommandSender) -> Boolean = { true }
+     private var executor: (CommandContext.() -> Unit)? = null
+ 
+@@ -50,15 +50,17 @@ class ArgumentCommandImpl(private val name: String, private val argumentType: Ar
+             .requires {
+                 this.requirement(it.bukkitSender)
+             }
+-            .suggests { context, builder ->
+-                val artistContext = ArtistCommandContext(context)
+-                val provider = ArtistSuggestionProvider(artistContext)
+-                provider.apply(this.suggestion)
+-                provider.strings.forEach(builder::suggest)
+-                provider.ints.forEach(builder::suggest)
+-                return@suggests builder.buildFuture()
+-            }
+             .apply {
++                if (this@ArgumentCommandImpl.suggestion != null) {
++                    this.suggests { context, builder ->
++                        val artistContext = ArtistCommandContext(context)
++                        val provider = ArtistSuggestionProvider(artistContext)
++                        provider.apply(this@ArgumentCommandImpl.suggestion!!)
++                        provider.strings.forEach(builder::suggest)
++                        provider.ints.forEach(builder::suggest)
++                        return@suggests builder.buildFuture()
++                    }
++                }
+                 if (this@ArgumentCommandImpl.executor != null)
+                     this.executes {
+                         val artistContext = ArtistCommandContext(it)
+diff --git a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
+index d770086728ce557ddd731c3954f735cc5a9c8975..c52c612db73f241ae4b43eb876542d7a52ef927e 100644
+--- a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
++++ b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
+@@ -1,22 +1,25 @@
+ package net.deechael.artist.gui
+ 
++import net.deechael.artist.gui.anvil.ArtistAnvilGui
+ import net.deechael.artist.gui.normal.ArtistNormalGui
+ import net.deechael.gui.Gui
+ import net.deechael.gui.GuiManager
+ import net.deechael.gui.GuiType
++import net.deechael.gui.anvil.AnvilGui
+ import net.deechael.gui.normal.NormalGui
+ import org.bukkit.plugin.Plugin
+ 
+ object ArtistGuiManager : GuiManager {
+ 
+     private val interfaceToImplements = mapOf(
+-        pairOf(NormalGui::class.java, ArtistNormalGui::class.java)
++        pairOf(NormalGui::class.java, ArtistNormalGui::class.java),
++        pairOf(AnvilGui::class.java, ArtistAnvilGui::class.java)
+     )
+ 
+     @Suppress("UNCHECKED_CAST")
+     override fun <T : Gui> createGui(plugin: Plugin, type: GuiType): T {
+         val guiImpl = interfaceToImplements[type.guiClass]!!
+-        val construct = guiImpl.getConstructor(Plugin::class.java, GuiType::class.java)
++        val construct = guiImpl.getDeclaredConstructor(Plugin::class.java, GuiType::class.java)
+         return construct.newInstance(plugin, type) as T
+     }
+ 

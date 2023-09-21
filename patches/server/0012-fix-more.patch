@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Thu, 21 Sep 2023 22:54:15 +0800
+Subject: [PATCH] fix: more
+
+
+diff --git a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
+index c52c612db73f241ae4b43eb876542d7a52ef927e..a6c3957707486a75348042066bfcb589b64c76aa 100644
+--- a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
++++ b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
+@@ -20,6 +20,7 @@ object ArtistGuiManager : GuiManager {
+     override fun <T : Gui> createGui(plugin: Plugin, type: GuiType): T {
+         val guiImpl = interfaceToImplements[type.guiClass]!!
+         val construct = guiImpl.getDeclaredConstructor(Plugin::class.java, GuiType::class.java)
++        construct.isAccessible = true
+         return construct.newInstance(plugin, type) as T
+     }
+ 
+diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt
+index 7a3d9702c8af536df93c28dd59c45e1eae7a8829..2603fa8d416d0488362f0d0b0e2dc3bff59ca484 100644
+--- a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt
++++ b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt
+@@ -2,14 +2,15 @@ package net.deechael.artist.gui.anvil
+ 
+ import net.deechael.artist.gui.ArtistGui
+ import net.deechael.gui.GuiAudience
++import net.deechael.gui.GuiType
+ import net.deechael.gui.anvil.AnvilGui
+ import net.deechael.gui.anvil.AnvilGuiRenderer
+ import org.bukkit.plugin.Plugin
+ 
+-class ArtistAnvilGui(plugin: Plugin) : ArtistGui(plugin), AnvilGui {
++class ArtistAnvilGui(plugin: Plugin, type: GuiType) : ArtistGui(plugin), AnvilGui {
+ 
+     override fun render(audience: GuiAudience): AnvilGuiRenderer {
+-        TODO("Not yet implemented")
++        return ArtistAnvilGuiRenderer(this.plugin, this, audience, null)
+     }
+ 
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiRenderer.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiRenderer.kt
+index a8a0ece371daca781303e8d5e23cd504b1436f79..f5904b2c00e8de41ed31f2615ab3e0416a1de267 100644
+--- a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiRenderer.kt
++++ b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiRenderer.kt
+@@ -16,8 +16,10 @@ class ArtistAnvilGuiRenderer(
+     plugin: Plugin,
+     gui: Gui,
+     audience: GuiAudience,
+-    private val artistAnvilGuiScene: ArtistAnvilGuiScene?) : ArtistGuiRenderer(plugin, gui, audience), AnvilGuiRenderer {
++    private val artistAnvilGuiScene: ArtistAnvilGuiScene?
++) : ArtistGuiRenderer(plugin, gui, audience), AnvilGuiRenderer {
+ 
++    private var text: String? = null
+     private var leftInput: ArtistSlot? = null
+     private var rightInput: ArtistSlot? = null
+     private var result: ArtistSlot? = null
+@@ -47,9 +49,14 @@ class ArtistAnvilGuiRenderer(
+         return this
+     }
+ 
++    override fun text(text: String): AnvilGuiRenderer {
++        this.text = text
++        return this;
++    }
++
+     override fun render(): AnvilGuiScene {
+         val scene = this.artistAnvilGuiScene ?: ArtistAnvilGuiScene(this.title, this.gui(), this.audience())
+-        scene.rerender(this.title, this.close, this.leftInput, this.rightInput, this.result, this.resulter)
++        scene.rerender(this.title, this.close, this.text, this.leftInput, this.rightInput, this.result, this.resulter)
+         return scene
+     }
+ 
+diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt
+index f56105b85d5df471c5607919955d9423a76148ff..d484985ed4b2cb9792b6cae1016fa9d2be67d450 100644
+--- a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt
++++ b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt
+@@ -80,7 +80,7 @@ class ArtistAnvilGuiScene(title: Component?, gui: Gui, audience: GuiAudience) :
+         return ArtistAnvilGuiRenderer(this.gui().plugin, this.gui, this.audience, this)
+     }
+ 
+-    fun rerender(title: Component?, closer: Closer, leftInput: ArtistSlot?, rightInput: ArtistSlot?, result: ArtistSlot?, resulter: AnvilResulter?) {
++    fun rerender(title: Component?, closer: Closer, text: String?, leftInput: ArtistSlot?, rightInput: ArtistSlot?, result: ArtistSlot?, resulter: AnvilResulter?) {
+         if (title != null) {
+             val serverPlayer = (this.audience as CraftPlayer).handle
+             val titlePacket = ClientboundOpenScreenPacket(
+@@ -90,6 +90,9 @@ class ArtistAnvilGuiScene(title: Component?, gui: Gui, audience: GuiAudience) :
+             )
+             serverPlayer.connection.send(titlePacket)
+         }
++        if (text != null) {
++            this.fakeAnvil.setText(text)
++        }
+         this.closer = closer
+         this.leftInput = leftInput
+         this.rightInput = rightInput
+diff --git a/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiRenderer.kt b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiRenderer.kt
+index f2594d03ec489c17252fbf905e85068bcb6eba59..a90ef60b7c3df0a2c2e2fcc632acf19ef9f47c88 100644
+--- a/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiRenderer.kt
++++ b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiRenderer.kt
+@@ -26,8 +26,9 @@ class ArtistNormalGuiRenderer(
+         return super.gui() as NormalGui
+     }
+ 
+-    override fun slot(raw: Int, builder: Slot.() -> Unit) {
++    override fun slot(raw: Int, builder: Slot.() -> Unit): NormalGuiRenderer {
+         this.slots[raw] = ArtistSlot().apply(builder)
++        return this
+     }
+ 
+     override fun render(): NormalGuiScene {

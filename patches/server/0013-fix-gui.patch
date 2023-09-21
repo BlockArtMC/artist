@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Fri, 22 Sep 2023 00:21:23 +0800
+Subject: [PATCH] fix: gui
+
+
+diff --git a/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt b/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt
+index b24891233c850827960ae4e53daa0fc721021e71..a6cbd197d5d51fea2a16b665923fb6ff2da6477a 100644
+--- a/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt
++++ b/src/main/kotlin/net/deechael/artist/command/ArgumentCommandImpl.kt
+@@ -9,7 +9,7 @@ import org.bukkit.command.CommandSender
+ 
+ class ArgumentCommandImpl(private val name: String, private val argumentType: ArgumentType<*>): CommandImpl(), ArgumentCommand {
+ 
+-    private var suggestion: (SuggestionProvider.() -> Unit)? = {}
++    private var suggestion: (SuggestionProvider.() -> Unit)? = null
+     private var requirement: (CommandSender) -> Boolean = { true }
+     private var executor: (CommandContext.() -> Unit)? = null
+ 
+diff --git a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
+index a6c3957707486a75348042066bfcb589b64c76aa..130cc1a2c57e9a4f3e20cf8b6c734f4f1b6ce039 100644
+--- a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
++++ b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
+@@ -11,17 +11,14 @@ import org.bukkit.plugin.Plugin
+ 
+ object ArtistGuiManager : GuiManager {
+ 
+-    private val interfaceToImplements = mapOf(
+-        pairOf(NormalGui::class.java, ArtistNormalGui::class.java),
+-        pairOf(AnvilGui::class.java, ArtistAnvilGui::class.java)
++    private val interfaceToImplements: Map<Class<out Gui>, (Plugin, GuiType) -> Gui> = mapOf(
++        pairOf(NormalGui::class.java) { plugin, type -> ArtistNormalGui(plugin, type) },
++        pairOf(AnvilGui::class.java) { plugin, _ -> ArtistAnvilGui(plugin) }
+     )
+ 
+     @Suppress("UNCHECKED_CAST")
+     override fun <T : Gui> createGui(plugin: Plugin, type: GuiType): T {
+-        val guiImpl = interfaceToImplements[type.guiClass]!!
+-        val construct = guiImpl.getDeclaredConstructor(Plugin::class.java, GuiType::class.java)
+-        construct.isAccessible = true
+-        return construct.newInstance(plugin, type) as T
++        return interfaceToImplements[type.guiClass]!!(plugin, type) as T
+     }
+ 
+ }
+diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt
+index 2603fa8d416d0488362f0d0b0e2dc3bff59ca484..6ba268d30008cf6220563e2c83182a73e2072c00 100644
+--- a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt
++++ b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt
+@@ -7,7 +7,7 @@ import net.deechael.gui.anvil.AnvilGui
+ import net.deechael.gui.anvil.AnvilGuiRenderer
+ import org.bukkit.plugin.Plugin
+ 
+-class ArtistAnvilGui(plugin: Plugin, type: GuiType) : ArtistGui(plugin), AnvilGui {
++class ArtistAnvilGui(plugin: Plugin) : ArtistGui(plugin), AnvilGui {
+ 
+     override fun render(audience: GuiAudience): AnvilGuiRenderer {
+         return ArtistAnvilGuiRenderer(this.plugin, this, audience, null)

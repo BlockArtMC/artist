@@ -165,7 +165,7 @@ index 2ab5707bee07035b9010aca84ee64fc17eef7c4b..eea2d3facd44c5fd0e1ac6fefeecffad
          return command
 diff --git a/src/main/kotlin/net/deechael/artist/command/argument/AngleArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/AngleArgumentType.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..da05eaf832c1616a2b0952eeed7db663c43f1948
+index 0000000000000000000000000000000000000000..7475fce30c13dd3a21bfd1e3dce0a6d787e4aea5
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/command/argument/AngleArgumentType.kt
 @@ -0,0 +1,20 @@
@@ -224,7 +224,7 @@ index 0000000000000000000000000000000000000000..4365497afc5193dff3bf83d8e9e11408
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/command/argument/GameModeArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/GameModeArgumentType.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..db1ee1c71c66ebdbd9d9aaf4efa36a30f5038b66
+index 0000000000000000000000000000000000000000..b66fdb2a0b2ba9ddcd1580c4e7c70997dc8f7dfd
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/command/argument/GameModeArgumentType.kt
 @@ -0,0 +1,21 @@
@@ -252,7 +252,7 @@ index 0000000000000000000000000000000000000000..db1ee1c71c66ebdbd9d9aaf4efa36a30
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/command/argument/ItemStackArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/ItemStackArgumentType.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..e2ae8cfbc4546f43c68e88be378f0ecbb8aa190b
+index 0000000000000000000000000000000000000000..f56a46dbc5390d4c4686d0fb49141714f3879f2b
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/command/argument/ItemStackArgumentType.kt
 @@ -0,0 +1,22 @@
@@ -281,7 +281,7 @@ index 0000000000000000000000000000000000000000..e2ae8cfbc4546f43c68e88be378f0ecb
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/command/argument/MessageArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/MessageArgumentType.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..cbd5383df481924f49124fbc1b2fe13798fb2c21
+index 0000000000000000000000000000000000000000..db7a2ac5d00a07c8b9de3a0cca143c0fb5f9d4e8
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/command/argument/MessageArgumentType.kt
 @@ -0,0 +1,22 @@
@@ -310,7 +310,7 @@ index 0000000000000000000000000000000000000000..cbd5383df481924f49124fbc1b2fe137
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/command/argument/OfflinePlayersArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/OfflinePlayersArgumentType.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..e0f3556bd6990f04d753f4d386d8cf196d951a25
+index 0000000000000000000000000000000000000000..6e6659c1ffa5b27af283778f3875732e37e06071
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/command/argument/OfflinePlayersArgumentType.kt
 @@ -0,0 +1,26 @@
@@ -406,7 +406,7 @@ index 0000000000000000000000000000000000000000..a15b2b0149b4c4ea9b4546bded7dc928
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/command/argument/ParticleArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/ParticleArgumentType.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..90be34f0a7757e309035d452825ff16d1eacb3a5
+index 0000000000000000000000000000000000000000..369574d1c2563ffe1aef99edc13e89aa784d6653
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/command/argument/ParticleArgumentType.kt
 @@ -0,0 +1,23 @@
@@ -464,7 +464,7 @@ index 0000000000000000000000000000000000000000..3befd9a89d766ca1dc41bde19ee49b74
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/command/argument/UUIDArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/UUIDArgumentType.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..01cf1ceacd84151df19cdf2e07f364861c3f0578
+index 0000000000000000000000000000000000000000..34233ccd16f1fd66c6df55c8a75b7b3fe3faba19
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/command/argument/UUIDArgumentType.kt
 @@ -0,0 +1,20 @@
@@ -491,7 +491,7 @@ index 0000000000000000000000000000000000000000..01cf1ceacd84151df19cdf2e07f36486
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/command/argument/VectorArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/VectorArgumentType.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..fa7f631f8b626b40957c30116dc064cd0704ce07
+index 0000000000000000000000000000000000000000..e3a533f5af9c06dc02f92487fc751acffc0893ce
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/command/argument/VectorArgumentType.kt
 @@ -0,0 +1,22 @@
@@ -520,7 +520,7 @@ index 0000000000000000000000000000000000000000..fa7f631f8b626b40957c30116dc064cd
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/command/argument/WorldArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/WorldArgumentType.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..cea7e4f549a4780068ed14aff6756c08dd6dd181
+index 0000000000000000000000000000000000000000..0a5e596ce97e07e09d0c5d279751cbd32f9051fc
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/artist/command/argument/WorldArgumentType.kt
 @@ -0,0 +1,22 @@

@@ -176,7 +176,7 @@ index d15a74c38576c49df61cfab02c70fc5d8c0dd5f7..fdde5dfafd89788a594fb2cb162f5b6f
  }
 diff --git a/src/main/kotlin/net/deechael/extensions/NbtDSL.kt b/src/main/kotlin/net/deechael/extensions/NbtDSL.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..16a52d536524c583145bbf3d5c6e9f4f64ba02d3
+index 0000000000000000000000000000000000000000..87734d5df66568be06c6ac878d636b2294dd86fc
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/extensions/NbtDSL.kt
 @@ -0,0 +1,57 @@
@@ -240,7 +240,7 @@ index 0000000000000000000000000000000000000000..16a52d536524c583145bbf3d5c6e9f4f
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtByte.kt b/src/main/kotlin/net/deechael/nbt/NbtByte.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..0f97eb9f858ccef5c8071356b4ec8854bcdb84cf
+index 0000000000000000000000000000000000000000..0edb571629633ded4156e3eaaa43cd60af9daea8
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtByte.kt
 @@ -0,0 +1,11 @@
@@ -258,7 +258,7 @@ index 0000000000000000000000000000000000000000..0f97eb9f858ccef5c8071356b4ec8854
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtByteArray.kt b/src/main/kotlin/net/deechael/nbt/NbtByteArray.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..6c114d407fc8c21d2c9e420640c33ee1f7af3127
+index 0000000000000000000000000000000000000000..e24fa16d14f564c8a06fde354d25d2d4a5613108
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtByteArray.kt
 @@ -0,0 +1,19 @@
@@ -284,7 +284,7 @@ index 0000000000000000000000000000000000000000..6c114d407fc8c21d2c9e420640c33ee1
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtDouble.kt b/src/main/kotlin/net/deechael/nbt/NbtDouble.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..652a95db017b97a83dff503c266ee743b2beb0bf
+index 0000000000000000000000000000000000000000..e83965133735eeea36434c225be322e23e710c9f
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtDouble.kt
 @@ -0,0 +1,11 @@
@@ -302,7 +302,7 @@ index 0000000000000000000000000000000000000000..652a95db017b97a83dff503c266ee743
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtEnd.kt b/src/main/kotlin/net/deechael/nbt/NbtEnd.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..35149268aa89922dc0f6e10b4a3fc8b84771e8d1
+index 0000000000000000000000000000000000000000..95cd0646427cf066455b048115bae2440dfa68c4
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtEnd.kt
 @@ -0,0 +1,7 @@
@@ -316,7 +316,7 @@ index 0000000000000000000000000000000000000000..35149268aa89922dc0f6e10b4a3fc8b8
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtFloat.kt b/src/main/kotlin/net/deechael/nbt/NbtFloat.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..4f4adcd1b815590129bb1290ad67d3f3ae0ea3d4
+index 0000000000000000000000000000000000000000..c696980a2647d8eabe46a3198e4c64fec0f0ddf5
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtFloat.kt
 @@ -0,0 +1,11 @@
@@ -334,7 +334,7 @@ index 0000000000000000000000000000000000000000..4f4adcd1b815590129bb1290ad67d3f3
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtInt.kt b/src/main/kotlin/net/deechael/nbt/NbtInt.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..1961583df40e9a49d505c1b33a3cefb89900b45a
+index 0000000000000000000000000000000000000000..a9e8abe51f7196d39cb3fbaded9a28b8972abe7b
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtInt.kt
 @@ -0,0 +1,11 @@
@@ -352,7 +352,7 @@ index 0000000000000000000000000000000000000000..1961583df40e9a49d505c1b33a3cefb8
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtIntArray.kt b/src/main/kotlin/net/deechael/nbt/NbtIntArray.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..0348648476de8a7518b567d244fee2e2f2738665
+index 0000000000000000000000000000000000000000..44fd63ea6aa6dab8ca8f95cf73af3625c417b910
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtIntArray.kt
 @@ -0,0 +1,19 @@
@@ -378,7 +378,7 @@ index 0000000000000000000000000000000000000000..0348648476de8a7518b567d244fee2e2
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtList.kt b/src/main/kotlin/net/deechael/nbt/NbtList.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..f5b46a212ed0a9ba3fd0cd6a47618c9bacac9c34
+index 0000000000000000000000000000000000000000..a54b62524c03b1b96021b4dc885523ae5f30edc6
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtList.kt
 @@ -0,0 +1,23 @@
@@ -408,7 +408,7 @@ index 0000000000000000000000000000000000000000..f5b46a212ed0a9ba3fd0cd6a47618c9b
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtLong.kt b/src/main/kotlin/net/deechael/nbt/NbtLong.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..cf37ee692d1302b702b03fce1415244123919bd3
+index 0000000000000000000000000000000000000000..89e3fb02ee0f57c487e67bf87f6f12e26c3fc12f
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtLong.kt
 @@ -0,0 +1,11 @@
@@ -426,7 +426,7 @@ index 0000000000000000000000000000000000000000..cf37ee692d1302b702b03fce14152441
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtLongArray.kt b/src/main/kotlin/net/deechael/nbt/NbtLongArray.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..c03cef9755bb673dca47adef84014bafd8d91e38
+index 0000000000000000000000000000000000000000..0fc297be6544f2f83813f670e58ebcc0ed509250
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtLongArray.kt
 @@ -0,0 +1,19 @@
@@ -452,7 +452,7 @@ index 0000000000000000000000000000000000000000..c03cef9755bb673dca47adef84014baf
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtManager.kt b/src/main/kotlin/net/deechael/nbt/NbtManager.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..fe1251536bb8e957a68ce57f5abfd4d7fe0e7af4
+index 0000000000000000000000000000000000000000..ac837623f1335580ab4be0bcd73a6318803b075d
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtManager.kt
 @@ -0,0 +1,31 @@
@@ -490,7 +490,7 @@ index 0000000000000000000000000000000000000000..fe1251536bb8e957a68ce57f5abfd4d7
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtObject.kt b/src/main/kotlin/net/deechael/nbt/NbtObject.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..659982077d15f7b3b5a377621cd64609a6277af9
+index 0000000000000000000000000000000000000000..edc49e9befcd77b59f4f79b18b9e00f7586fc9f4
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtObject.kt
 @@ -0,0 +1,9 @@
@@ -506,7 +506,7 @@ index 0000000000000000000000000000000000000000..659982077d15f7b3b5a377621cd64609
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtShort.kt b/src/main/kotlin/net/deechael/nbt/NbtShort.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..15580f8920493dbd00d0d868b2dc06349e134eb0
+index 0000000000000000000000000000000000000000..cd23e968e494fa3227da94b4d77a1baf186a6f3e
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtShort.kt
 @@ -0,0 +1,11 @@
@@ -524,7 +524,7 @@ index 0000000000000000000000000000000000000000..15580f8920493dbd00d0d868b2dc0634
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtString.kt b/src/main/kotlin/net/deechael/nbt/NbtString.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..258e8b670a134f01c00a6f8ae037223c26742b0a
+index 0000000000000000000000000000000000000000..540c568b9e0dac3dd2c00ea73c7e22542beea973
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtString.kt
 @@ -0,0 +1,11 @@
@@ -541,7 +541,7 @@ index 0000000000000000000000000000000000000000..258e8b670a134f01c00a6f8ae037223c
 +}
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtTag.kt b/src/main/kotlin/net/deechael/nbt/NbtTag.kt
-index 58b040cb1396da710e2f74add6106bf4e28cbb40..7db0b0ab230cc160f0d5504c4ecc290656f56d7a 100644
+index e4290f36165a42338210b36f2991f435ed832681..5023b387683f6b30c6da677319f940451795ed1f 100644
 --- a/src/main/kotlin/net/deechael/nbt/NbtTag.kt
 +++ b/src/main/kotlin/net/deechael/nbt/NbtTag.kt
 @@ -1,4 +1,21 @@
@@ -570,7 +570,7 @@ index 58b040cb1396da710e2f74add6106bf4e28cbb40..7db0b0ab230cc160f0d5504c4ecc2906
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtUnrecognised.kt b/src/main/kotlin/net/deechael/nbt/NbtUnrecognised.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..0807c79210675641c6f9e8ca07cba88dda7ab0a6
+index 0000000000000000000000000000000000000000..a01bb3d1f9f412152c4be7b9f27578a220d17228
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtUnrecognised.kt
 @@ -0,0 +1,4 @@

@@ -18,7 +18,7 @@ index b24891233c850827960ae4e53daa0fc721021e71..a6cbd197d5d51fea2a16b665923fb6ff
      private var executor: (CommandContext.() -> Unit)? = null
  
 diff --git a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
-index a6c3957707486a75348042066bfcb589b64c76aa..130cc1a2c57e9a4f3e20cf8b6c734f4f1b6ce039 100644
+index 597d3e434e835ce9840bd0e1d431996dd29d5232..f4d4513687de734fcc244d391afc6c59faa9b157 100644
 --- a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
 +++ b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
 @@ -11,17 +11,14 @@ import org.bukkit.plugin.Plugin
@@ -44,7 +44,7 @@ index a6c3957707486a75348042066bfcb589b64c76aa..130cc1a2c57e9a4f3e20cf8b6c734f4f
  
  }
 diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt
-index 2603fa8d416d0488362f0d0b0e2dc3bff59ca484..6ba268d30008cf6220563e2c83182a73e2072c00 100644
+index 8567bd4f8e0abed35574f868d60f4989e604e2aa..aaf2cb8fff5b8542345f34e27c40107b722d0eb3 100644
 --- a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt
 +++ b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt
 @@ -7,7 +7,7 @@ import net.deechael.gui.anvil.AnvilGui

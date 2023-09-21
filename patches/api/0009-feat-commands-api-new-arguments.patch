@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Fri, 22 Sep 2023 01:50:18 +0800
+Subject: [PATCH] feat: commands api new arguments
+
+
+diff --git a/src/main/kotlin/net/deechael/command/ArgumentManager.kt b/src/main/kotlin/net/deechael/command/ArgumentManager.kt
+index 948a2a88114475e9f3b35f8a3214ee97e4dfe9f8..5d24d35566b5d150a5a27c3632cc2992674681cb 100644
+--- a/src/main/kotlin/net/deechael/command/ArgumentManager.kt
++++ b/src/main/kotlin/net/deechael/command/ArgumentManager.kt
+@@ -5,9 +5,13 @@ import org.bukkit.GameMode
+ import org.bukkit.OfflinePlayer
+ import org.bukkit.Particle
+ import org.bukkit.World
++import org.bukkit.attribute.Attribute
++import org.bukkit.enchantments.Enchantment
+ import org.bukkit.entity.Entity
++import org.bukkit.entity.EntityType
+ import org.bukkit.entity.Player
+ import org.bukkit.inventory.ItemStack
++import org.bukkit.potion.PotionEffectType
+ import org.bukkit.util.Vector
+ import java.util.UUID
+ 
+@@ -53,4 +57,14 @@ interface ArgumentManager {
+ 
+     fun itemStack(): ArgumentType<ItemStack>
+ 
++    fun enchantment(): ArgumentType<Enchantment>
++
++    fun entityType(): ArgumentType<EntityType>
++
++    fun summonableEntityType(): ArgumentType<EntityType>
++
++    fun attribute(): ArgumentType<Attribute>
++
++    fun potionEffectType(): ArgumentType<PotionEffectType>
++
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiRenderer.kt b/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiRenderer.kt
+index aadbfa936528cbcaef0ee75da87ed5b0c391c97b..8caa4ee73bceabfbaab16cb73424e47d39927cef 100644
+--- a/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiRenderer.kt
++++ b/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiRenderer.kt
+@@ -15,5 +15,7 @@ interface AnvilGuiRenderer : GuiRenderer {
+ 
+     fun resulter(builder: AnvilResulter): AnvilGuiRenderer
+ 
++    fun text(text: String): AnvilGuiRenderer
++
+     override fun render(): AnvilGuiScene
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/normal/NormalGuiRenderer.kt b/src/main/kotlin/net/deechael/gui/normal/NormalGuiRenderer.kt
+index e45849c568f21291f5398b80b2f6737eb4bedca6..7b583852f9752b6f9f79fc09cb6bbce215857edf 100644
+--- a/src/main/kotlin/net/deechael/gui/normal/NormalGuiRenderer.kt
++++ b/src/main/kotlin/net/deechael/gui/normal/NormalGuiRenderer.kt
+@@ -8,7 +8,7 @@ interface NormalGuiRenderer: GuiRenderer {
+ 
+     override fun gui(): NormalGui
+ 
+-    fun slot(raw: Int, builder: Slot.() -> Unit)
++    fun slot(raw: Int, builder: Slot.() -> Unit): NormalGuiRenderer
+ 
+     override fun render(): NormalGuiScene
+ 

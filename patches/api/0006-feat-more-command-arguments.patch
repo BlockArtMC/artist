@@ -6,7 +6,7 @@ Subject: [PATCH] feat: more command arguments
 
 diff --git a/src/main/java/org/bukkit/block/BlockStack.java b/src/main/java/org/bukkit/block/BlockStack.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..99aaf9ead87fa1f2f64f873be0f5b278388f23a0
+index 0000000000000000000000000000000000000000..65ba7bea551fb3e3ad4860537d32e3e7c60193ec
 --- /dev/null
 +++ b/src/main/java/org/bukkit/block/BlockStack.java
 @@ -0,0 +1,12 @@
@@ -76,7 +76,7 @@ index a71ff7e1bd612f6e09ccc98400da1d69cd90cec6..948a2a88114475e9f3b35f8a3214ee97
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/nbt/NbtTag.kt b/src/main/kotlin/net/deechael/nbt/NbtTag.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..58b040cb1396da710e2f74add6106bf4e28cbb40
+index 0000000000000000000000000000000000000000..e4290f36165a42338210b36f2991f435ed832681
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/nbt/NbtTag.kt
 @@ -0,0 +1,4 @@

@@ -1,0 +1,215 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Fri, 22 Sep 2023 01:50:27 +0800
+Subject: [PATCH] feat: commands api new arguments
+
+
+diff --git a/src/main/kotlin/net/deechael/artist/command/ArtistArgumentManager.kt b/src/main/kotlin/net/deechael/artist/command/ArtistArgumentManager.kt
+index 058c909c349762a20a192df9e38c86a9687062b1..f43e2ff83c4de68ffc047f0da2cca085cfb3cc5c 100644
+--- a/src/main/kotlin/net/deechael/artist/command/ArtistArgumentManager.kt
++++ b/src/main/kotlin/net/deechael/artist/command/ArtistArgumentManager.kt
+@@ -10,10 +10,14 @@ import org.bukkit.Location
+ import org.bukkit.OfflinePlayer
+ import org.bukkit.Particle
+ import org.bukkit.World
++import org.bukkit.attribute.Attribute
+ import org.bukkit.block.data.BlockData
++import org.bukkit.enchantments.Enchantment
+ import org.bukkit.entity.Entity
++import org.bukkit.entity.EntityType
+ import org.bukkit.entity.Player
+ import org.bukkit.inventory.ItemStack
++import org.bukkit.potion.PotionEffectType
+ import org.bukkit.util.Vector
+ import java.util.*
+ 
+@@ -99,4 +103,24 @@ object ArtistArgumentManager : ArgumentManager {
+         return ItemStackArgumentType
+     }
+ 
++    override fun enchantment(): ArgumentType<Enchantment> {
++        return EnchantmentArgumentType
++    }
++
++    override fun entityType(): ArgumentType<EntityType> {
++        return EntityTypeArgumentType
++    }
++
++    override fun summonableEntityType(): ArgumentType<EntityType> {
++        return SummonableEntityTypeArgumentType
++    }
++
++    override fun attribute(): ArgumentType<Attribute> {
++        return AttributeArgumentType
++    }
++
++    override fun potionEffectType(): ArgumentType<PotionEffectType> {
++        return PotionEffectTypeArgumentType
++    }
++
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/AttributeArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/AttributeArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..58e9406bf7a90949058763d75f9128e0a012ce98
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/AttributeArgumentType.kt
+@@ -0,0 +1,25 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.Commands
++import net.minecraft.commands.arguments.ResourceArgument
++import net.minecraft.core.Holder
++import net.minecraft.core.registries.BuiltInRegistries
++import net.minecraft.core.registries.Registries
++import org.bukkit.attribute.Attribute
++import org.bukkit.craftbukkit.attribute.CraftAttributeMap
++
++object AttributeArgumentType : ArgumentType<Attribute>, IArgumentType<Holder.Reference<net.minecraft.world.entity.ai.attributes.Attribute>> {
++
++    override fun get(context: CommandContext, name: String): Attribute {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return CraftAttributeMap.fromMinecraft(BuiltInRegistries.ATTRIBUTE.getKey(ResourceArgument.getAttribute(original, name).value())!!.toString())
++    }
++
++    override fun brigadier(): ResourceArgument<net.minecraft.world.entity.ai.attributes.Attribute> {
++        return ResourceArgument.resource(Commands.COMMAND_REGISTRY_ACCESS, Registries.ATTRIBUTE)
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/EnchantmentArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/EnchantmentArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..53dd312d7ddab3c5b879d04378dd34a029a31e92
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/EnchantmentArgumentType.kt
+@@ -0,0 +1,25 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.Commands
++import net.minecraft.commands.arguments.ResourceArgument
++import net.minecraft.core.Holder
++import net.minecraft.core.registries.Registries
++import org.bukkit.craftbukkit.enchantments.CraftEnchantment
++import org.bukkit.craftbukkit.util.CraftNamespacedKey
++import org.bukkit.enchantments.Enchantment
++
++object EnchantmentArgumentType : ArgumentType<Enchantment>, IArgumentType<Holder.Reference<net.minecraft.world.item.enchantment.Enchantment>> {
++
++    override fun get(context: CommandContext, name: String): Enchantment {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return CraftEnchantment(ResourceArgument.getEnchantment(original, name).value())
++    }
++
++    override fun brigadier(): ResourceArgument<net.minecraft.world.item.enchantment.Enchantment> {
++        return ResourceArgument.resource(Commands.COMMAND_REGISTRY_ACCESS, Registries.ENCHANTMENT)
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/EntityTypeArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/EntityTypeArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..6d15365b484ff53b7d324b4b26006805c263e286
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/EntityTypeArgumentType.kt
+@@ -0,0 +1,26 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.Commands
++import net.minecraft.commands.arguments.ResourceArgument
++import net.minecraft.core.Holder
++import net.minecraft.core.registries.Registries
++import org.bukkit.Registry
++import org.bukkit.craftbukkit.util.CraftNamespacedKey
++import org.bukkit.entity.EntityType
++
++object EntityTypeArgumentType : ArgumentType<EntityType>, IArgumentType<Holder.Reference<net.minecraft.world.entity.EntityType<*>>> {
++
++    override fun get(context: CommandContext, name: String): EntityType {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return Registry.ENTITY_TYPE.get(CraftNamespacedKey.fromMinecraft(net.minecraft.world.entity.EntityType.getKey(ResourceArgument.getEntityType(original, name).value())))!!
++    }
++
++    override fun brigadier(): ResourceArgument<net.minecraft.world.entity.EntityType<*>> {
++        return ResourceArgument.resource(Commands.COMMAND_REGISTRY_ACCESS, Registries.ENTITY_TYPE)
++    }
++
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/PotionEffectTypeArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/PotionEffectTypeArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..8f523abd8556704de7a27f8bd2a5a23c89cf1d94
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/PotionEffectTypeArgumentType.kt
+@@ -0,0 +1,27 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.Commands
++import net.minecraft.commands.arguments.ResourceArgument
++import net.minecraft.core.Holder
++import net.minecraft.core.registries.BuiltInRegistries
++import net.minecraft.core.registries.Registries
++import net.minecraft.world.effect.MobEffect
++import org.bukkit.craftbukkit.potion.CraftPotionEffectType
++import org.bukkit.craftbukkit.util.CraftNamespacedKey
++import org.bukkit.potion.PotionEffectType
++
++object PotionEffectTypeArgumentType : ArgumentType<PotionEffectType>, IArgumentType<Holder.Reference<MobEffect>> {
++
++    override fun get(context: CommandContext, name: String): PotionEffectType {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return CraftPotionEffectType.getByKey(CraftNamespacedKey.fromMinecraft(BuiltInRegistries.MOB_EFFECT.getKey(ResourceArgument.getMobEffect(original, name).value())))!!
++    }
++
++    override fun brigadier(): ResourceArgument<MobEffect> {
++        return ResourceArgument.resource(Commands.COMMAND_REGISTRY_ACCESS, Registries.MOB_EFFECT)
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/command/argument/SummonableEntityTypeArgumentType.kt b/src/main/kotlin/net/deechael/artist/command/argument/SummonableEntityTypeArgumentType.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..79e510a63ce84f6c1909b9e78dab72b5f1b0ae4b
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/command/argument/SummonableEntityTypeArgumentType.kt
+@@ -0,0 +1,26 @@
++package net.deechael.artist.command.argument
++
++import net.deechael.artist.command.ArtistCommandContext
++import net.deechael.command.ArgumentType
++import net.deechael.command.CommandContext
++import net.minecraft.commands.Commands
++import net.minecraft.commands.arguments.ResourceArgument
++import net.minecraft.core.Holder
++import net.minecraft.core.registries.Registries
++import org.bukkit.Registry
++import org.bukkit.craftbukkit.util.CraftNamespacedKey
++import org.bukkit.entity.EntityType
++
++object SummonableEntityTypeArgumentType : ArgumentType<EntityType>, IArgumentType<Holder.Reference<net.minecraft.world.entity.EntityType<*>>> {
++
++    override fun get(context: CommandContext, name: String): EntityType {
++        val original = (context as ArtistCommandContext).getOriginal()
++        return Registry.ENTITY_TYPE.get(CraftNamespacedKey.fromMinecraft(net.minecraft.world.entity.EntityType.getKey(ResourceArgument.getSummonableEntityType(original, name).value())))!!
++    }
++
++    override fun brigadier(): ResourceArgument<net.minecraft.world.entity.EntityType<*>> {
++        return ResourceArgument.resource(Commands.COMMAND_REGISTRY_ACCESS, Registries.ENTITY_TYPE)
++    }
++
++
++}
+\ No newline at end of file

@@ -5,7 +5,7 @@ Subject: [PATCH] fix: more
 
 
 diff --git a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
-index c52c612db73f241ae4b43eb876542d7a52ef927e..a6c3957707486a75348042066bfcb589b64c76aa 100644
+index 01707e6e61ec615257980a826b4514a96e998d9a..597d3e434e835ce9840bd0e1d431996dd29d5232 100644
 --- a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
 +++ b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
 @@ -20,6 +20,7 @@ object ArtistGuiManager : GuiManager {
@@ -17,7 +17,7 @@ index c52c612db73f241ae4b43eb876542d7a52ef927e..a6c3957707486a75348042066bfcb589
      }
  
 diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt
-index 7a3d9702c8af536df93c28dd59c45e1eae7a8829..2603fa8d416d0488362f0d0b0e2dc3bff59ca484 100644
+index fc241cb57235ee4636761dec91076337b113f671..8567bd4f8e0abed35574f868d60f4989e604e2aa 100644
 --- a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt
 +++ b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGui.kt
 @@ -2,14 +2,15 @@ package net.deechael.artist.gui.anvil
@@ -40,7 +40,7 @@ index 7a3d9702c8af536df93c28dd59c45e1eae7a8829..2603fa8d416d0488362f0d0b0e2dc3bf
  }
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiRenderer.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiRenderer.kt
-index a8a0ece371daca781303e8d5e23cd504b1436f79..f5904b2c00e8de41ed31f2615ab3e0416a1de267 100644
+index 03320c45ab08b0cb06c925668c8268eb1ccb6cb2..9a2add55a5d86b02ba29aa60a080c1d7ade43f6a 100644
 --- a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiRenderer.kt
 +++ b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiRenderer.kt
 @@ -16,8 +16,10 @@ class ArtistAnvilGuiRenderer(
@@ -72,7 +72,7 @@ index a8a0ece371daca781303e8d5e23cd504b1436f79..f5904b2c00e8de41ed31f2615ab3e041
      }
  
 diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt
-index f56105b85d5df471c5607919955d9423a76148ff..d484985ed4b2cb9792b6cae1016fa9d2be67d450 100644
+index 8d249fc9a8c13690c12973dfba6509f2e5781660..50249a5e5d240ca15a42a61a3396cb8168b73b8b 100644
 --- a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt
 +++ b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt
 @@ -80,7 +80,7 @@ class ArtistAnvilGuiScene(title: Component?, gui: Gui, audience: GuiAudience) :
@@ -95,7 +95,7 @@ index f56105b85d5df471c5607919955d9423a76148ff..d484985ed4b2cb9792b6cae1016fa9d2
          this.leftInput = leftInput
          this.rightInput = rightInput
 diff --git a/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiRenderer.kt b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiRenderer.kt
-index f2594d03ec489c17252fbf905e85068bcb6eba59..a90ef60b7c3df0a2c2e2fcc632acf19ef9f47c88 100644
+index 9d1cf2f5a117036ca932c62e645da08b2dbd4a6c..4d3e48249bb7227ed43445579cf06fd994c63afc 100644
 --- a/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiRenderer.kt
 +++ b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiRenderer.kt
 @@ -26,8 +26,9 @@ class ArtistNormalGuiRenderer(

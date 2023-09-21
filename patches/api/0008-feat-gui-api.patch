@@ -71,7 +71,7 @@ index f9dd00210c1762a40259f823aeb8d8a5ddc78e3e..c823ed9d6491f355537ac9bfde341dad
      @Override
 diff --git a/src/main/kotlin/net/deechael/gui/Clicker.kt b/src/main/kotlin/net/deechael/gui/Clicker.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..cd61ef6eb3d857067ef16d43bfc019ab71ac56b9
+index 0000000000000000000000000000000000000000..71832eaf33fbe5683c77e06bd983e4ce7f9b6a73
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/Clicker.kt
 @@ -0,0 +1,9 @@
@@ -87,7 +87,7 @@ index 0000000000000000000000000000000000000000..cd61ef6eb3d857067ef16d43bfc019ab
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/Closer.kt b/src/main/kotlin/net/deechael/gui/Closer.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..1fbb3ada0dc0e2947753f7698fb4b237496d5948
+index 0000000000000000000000000000000000000000..478bcc4552115af9722fbb5ecec226e7e4830f7a
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/Closer.kt
 @@ -0,0 +1,9 @@
@@ -103,7 +103,7 @@ index 0000000000000000000000000000000000000000..1fbb3ada0dc0e2947753f7698fb4b237
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/Gui.kt b/src/main/kotlin/net/deechael/gui/Gui.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..6bdeb32b38f2280164f4f7b05789968b14df628b
+index 0000000000000000000000000000000000000000..3ab2c1fe7ac9df2a52250e136f217a59021721fb
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/Gui.kt
 @@ -0,0 +1,11 @@
@@ -121,7 +121,7 @@ index 0000000000000000000000000000000000000000..6bdeb32b38f2280164f4f7b05789968b
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/GuiAudience.kt b/src/main/kotlin/net/deechael/gui/GuiAudience.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..4c11318b82b601ef6cd1d3fef09f086202da18a5
+index 0000000000000000000000000000000000000000..81423577ed949463a214a4938bbc3d712558160b
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/GuiAudience.kt
 @@ -0,0 +1,7 @@
@@ -135,7 +135,7 @@ index 0000000000000000000000000000000000000000..4c11318b82b601ef6cd1d3fef09f0862
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/GuiContext.kt b/src/main/kotlin/net/deechael/gui/GuiContext.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..f2827ca96c24bd36e4c1263a5a2b4d6e927b538b
+index 0000000000000000000000000000000000000000..9441a650b4330016c58998547cf5dd178f7762de
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/GuiContext.kt
 @@ -0,0 +1,11 @@
@@ -153,7 +153,7 @@ index 0000000000000000000000000000000000000000..f2827ca96c24bd36e4c1263a5a2b4d6e
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/GuiManager.kt b/src/main/kotlin/net/deechael/gui/GuiManager.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..3c38908eaa728b5a320a0590cdeb372cc96c699e
+index 0000000000000000000000000000000000000000..4607403cff9d2ceae04794699e20bfbb7a7dd144
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/GuiManager.kt
 @@ -0,0 +1,9 @@
@@ -169,7 +169,7 @@ index 0000000000000000000000000000000000000000..3c38908eaa728b5a320a0590cdeb372c
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/GuiRenderer.kt b/src/main/kotlin/net/deechael/gui/GuiRenderer.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..3aa5e3a278eb6852d157c78b03ded3bc8f47e8d8
+index 0000000000000000000000000000000000000000..bed86be0167777767feb66aae2926ede9c3eb640
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/GuiRenderer.kt
 @@ -0,0 +1,17 @@
@@ -193,7 +193,7 @@ index 0000000000000000000000000000000000000000..3aa5e3a278eb6852d157c78b03ded3bc
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/GuiType.kt b/src/main/kotlin/net/deechael/gui/GuiType.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..7867c4369611141c016a60c769822097d3025c5d
+index 0000000000000000000000000000000000000000..06ea3040a439ea47019a2c7819f05c5103019c91
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/GuiType.kt
 @@ -0,0 +1,23 @@
@@ -223,7 +223,7 @@ index 0000000000000000000000000000000000000000..7867c4369611141c016a60c769822097
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/Imager.kt b/src/main/kotlin/net/deechael/gui/Imager.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..23a3bfa0e1d0b02b934ac66b26370211934aaf6c
+index 0000000000000000000000000000000000000000..0f5a85a48112ec09cb99846dd2f67802a255a825
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/Imager.kt
 @@ -0,0 +1,9 @@
@@ -239,7 +239,7 @@ index 0000000000000000000000000000000000000000..23a3bfa0e1d0b02b934ac66b26370211
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/Scene.kt b/src/main/kotlin/net/deechael/gui/Scene.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..dba2f4c9c7d6ad10cb7778f3e4015d4d9a1213f3
+index 0000000000000000000000000000000000000000..d3535dba2efdf7d8cc1147b5a82f4526b675d4bf
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/Scene.kt
 @@ -0,0 +1,15 @@
@@ -261,7 +261,7 @@ index 0000000000000000000000000000000000000000..dba2f4c9c7d6ad10cb7778f3e4015d4d
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/Slot.kt b/src/main/kotlin/net/deechael/gui/Slot.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..3d2ba6f8cd861db12944e879ff3fe9f5a507bfa0
+index 0000000000000000000000000000000000000000..1ac2c7bd2f2992014f33ed508de3ca996a36b425
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/Slot.kt
 @@ -0,0 +1,9 @@
@@ -277,7 +277,7 @@ index 0000000000000000000000000000000000000000..3d2ba6f8cd861db12944e879ff3fe9f5
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/SlotContext.kt b/src/main/kotlin/net/deechael/gui/SlotContext.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..0c2e902eba3b4fcf85073c89bd75e272979fdaf8
+index 0000000000000000000000000000000000000000..a64bf94b0c0e136048c634feff4a56c4c7423415
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/SlotContext.kt
 @@ -0,0 +1,14 @@
@@ -298,7 +298,7 @@ index 0000000000000000000000000000000000000000..0c2e902eba3b4fcf85073c89bd75e272
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/anvil/AnvilGui.kt b/src/main/kotlin/net/deechael/gui/anvil/AnvilGui.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..240a917cc251ffef8189c69f53ad92792240dd27
+index 0000000000000000000000000000000000000000..52fce0b190aa67cb42ed5ecfa3a48f3718f00cba
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/anvil/AnvilGui.kt
 @@ -0,0 +1,12 @@
@@ -317,7 +317,7 @@ index 0000000000000000000000000000000000000000..240a917cc251ffef8189c69f53ad9279
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiRenderer.kt b/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiRenderer.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..c17eb1b850c4020cd502afbfeb272f847edde0b6
+index 0000000000000000000000000000000000000000..aadbfa936528cbcaef0ee75da87ed5b0c391c97b
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiRenderer.kt
 @@ -0,0 +1,19 @@
@@ -343,7 +343,7 @@ index 0000000000000000000000000000000000000000..c17eb1b850c4020cd502afbfeb272f84
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiScene.kt b/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiScene.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..ad19c0f5c30abebf25cf74f1f715cba70a3a15ef
+index 0000000000000000000000000000000000000000..411d82fe78f8ec1c2289a344eb6ef1913c5ff014
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/anvil/AnvilGuiScene.kt
 @@ -0,0 +1,12 @@
@@ -362,7 +362,7 @@ index 0000000000000000000000000000000000000000..ad19c0f5c30abebf25cf74f1f715cba7
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/anvil/AnvilResulter.kt b/src/main/kotlin/net/deechael/gui/anvil/AnvilResulter.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..0224b5cd14fd9305da72bb8b685abd8779f938bb
+index 0000000000000000000000000000000000000000..effa773539cde2b8c2cacdf52024f935841d8e65
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/anvil/AnvilResulter.kt
 @@ -0,0 +1,9 @@
@@ -378,7 +378,7 @@ index 0000000000000000000000000000000000000000..0224b5cd14fd9305da72bb8b685abd87
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/anvil/AnvilSlot.kt b/src/main/kotlin/net/deechael/gui/anvil/AnvilSlot.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..923c28688eb8f9aa29df6dfbdce56a11414b9ae0
+index 0000000000000000000000000000000000000000..84bed336c867f43539a2dd10f21fe503e924b78c
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/anvil/AnvilSlot.kt
 @@ -0,0 +1,19 @@
@@ -404,7 +404,7 @@ index 0000000000000000000000000000000000000000..923c28688eb8f9aa29df6dfbdce56a11
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/anvil/AnvilSlotContext.kt b/src/main/kotlin/net/deechael/gui/anvil/AnvilSlotContext.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..c6634c7871e374c6853d183f49a3151bc7b838c1
+index 0000000000000000000000000000000000000000..f031dc7e45cb81b5ce35745d22a85f97ddf1a28d
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/anvil/AnvilSlotContext.kt
 @@ -0,0 +1,17 @@
@@ -428,7 +428,7 @@ index 0000000000000000000000000000000000000000..c6634c7871e374c6853d183f49a3151b
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/normal/NormalGui.kt b/src/main/kotlin/net/deechael/gui/normal/NormalGui.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..aee9ea24850975988cffb2331db93d3f9b3ac7d3
+index 0000000000000000000000000000000000000000..159cef322a1224837e81459c441f8d334e0ff6e6
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/normal/NormalGui.kt
 @@ -0,0 +1,12 @@
@@ -447,7 +447,7 @@ index 0000000000000000000000000000000000000000..aee9ea24850975988cffb2331db93d3f
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/normal/NormalGuiRenderer.kt b/src/main/kotlin/net/deechael/gui/normal/NormalGuiRenderer.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..203d807588b1e693cdc60512061fcf9f2b2d0b42
+index 0000000000000000000000000000000000000000..e45849c568f21291f5398b80b2f6737eb4bedca6
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/normal/NormalGuiRenderer.kt
 @@ -0,0 +1,15 @@
@@ -469,7 +469,7 @@ index 0000000000000000000000000000000000000000..203d807588b1e693cdc60512061fcf9f
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/normal/NormalGuiScene.kt b/src/main/kotlin/net/deechael/gui/normal/NormalGuiScene.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..ae0b48118ab8fd8bb74de13fae75b1c0fedb7f60
+index 0000000000000000000000000000000000000000..a89240d49ef76c89a3f0fa25ce61d1b089e4a6e2
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/normal/NormalGuiScene.kt
 @@ -0,0 +1,12 @@
@@ -488,7 +488,7 @@ index 0000000000000000000000000000000000000000..ae0b48118ab8fd8bb74de13fae75b1c0
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/normal/NormalSlotContext.kt b/src/main/kotlin/net/deechael/gui/normal/NormalSlotContext.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..e5f297369d8b008ac64d3c4827e7203ecf6e7870
+index 0000000000000000000000000000000000000000..141b53d2b114af5045faf75e6ba33f37815ce1f9
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/normal/NormalSlotContext.kt
 @@ -0,0 +1,9 @@
@@ -504,7 +504,7 @@ index 0000000000000000000000000000000000000000..e5f297369d8b008ac64d3c4827e7203e
 \ No newline at end of file
 diff --git a/src/main/kotlin/net/deechael/gui/pageable/PageableGui.kt b/src/main/kotlin/net/deechael/gui/pageable/PageableGui.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..c8b379712261616df7d40497d0cdbb7e733dfddd
+index 0000000000000000000000000000000000000000..1c350ed68ff8d51688bdc82d26cda8a6463a7447
 --- /dev/null
 +++ b/src/main/kotlin/net/deechael/gui/pageable/PageableGui.kt
 @@ -0,0 +1,6 @@

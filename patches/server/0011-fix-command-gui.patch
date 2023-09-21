@@ -44,7 +44,7 @@ index a06e21e91c3ae36af78ecf81e272d80e502a864f..b24891233c850827960ae4e53daa0fc7
                      this.executes {
                          val artistContext = ArtistCommandContext(it)
 diff --git a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
-index d770086728ce557ddd731c3954f735cc5a9c8975..c52c612db73f241ae4b43eb876542d7a52ef927e 100644
+index 167ccc45cdf9990bb1c6f98119933fab7915cfb8..01707e6e61ec615257980a826b4514a96e998d9a 100644
 --- a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
 +++ b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
 @@ -1,22 +1,25 @@

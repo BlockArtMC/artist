@@ -1,0 +1,622 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Fri, 22 Sep 2023 23:27:27 +0800
+Subject: [PATCH] feat: pageable gui
+
+
+diff --git a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
+index f4d4513687de734fcc244d391afc6c59faa9b157..6991c5e464879b49ae039f8aa5ec2d80a7db4459 100644
+--- a/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
++++ b/src/main/kotlin/net/deechael/artist/gui/ArtistGuiManager.kt
+@@ -2,18 +2,21 @@ package net.deechael.artist.gui
+ 
+ import net.deechael.artist.gui.anvil.ArtistAnvilGui
+ import net.deechael.artist.gui.normal.ArtistNormalGui
++import net.deechael.artist.gui.pageable.ArtistPageableGui
+ import net.deechael.gui.Gui
+ import net.deechael.gui.GuiManager
+ import net.deechael.gui.GuiType
+ import net.deechael.gui.anvil.AnvilGui
+ import net.deechael.gui.normal.NormalGui
++import net.deechael.gui.pageable.PageableGui
+ import org.bukkit.plugin.Plugin
+ 
+ object ArtistGuiManager : GuiManager {
+ 
+     private val interfaceToImplements: Map<Class<out Gui>, (Plugin, GuiType) -> Gui> = mapOf(
+         pairOf(NormalGui::class.java) { plugin, type -> ArtistNormalGui(plugin, type) },
+-        pairOf(AnvilGui::class.java) { plugin, _ -> ArtistAnvilGui(plugin) }
++        pairOf(AnvilGui::class.java) { plugin, _ -> ArtistAnvilGui(plugin) },
++        pairOf(PageableGui::class.java) { plugin, type -> ArtistPageableGui<Any>(plugin, type) }
+     )
+ 
+     @Suppress("UNCHECKED_CAST")
+diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt
+index 50249a5e5d240ca15a42a61a3396cb8168b73b8b..7a4cd12a67f8312c90db7d2a2327ecc7852dda5b 100644
+--- a/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt
++++ b/src/main/kotlin/net/deechael/artist/gui/anvil/ArtistAnvilGuiScene.kt
+@@ -31,6 +31,7 @@ class ArtistAnvilGuiScene(title: Component?, gui: Gui, audience: GuiAudience) :
+     private val fakeAnvil: FakeAnvil
+     private val bukkitInventory: Inventory
+ 
++    private var title: Component?
+     private var closer: Closer = Closer {}
+     private var leftInput: ArtistSlot? = null
+     private var rightInput: ArtistSlot? = null
+@@ -42,6 +43,7 @@ class ArtistAnvilGuiScene(title: Component?, gui: Gui, audience: GuiAudience) :
+         set(value) { fakeAnvil.setText(value) }
+ 
+     init {
++        this.title = title
+         this.fakeAnvil = FakeAnvil(this,
+             (this.audience as CraftPlayer).handle!!,
+             this.resulter ?: AnvilResulter { null },
+@@ -77,7 +79,33 @@ class ArtistAnvilGuiScene(title: Component?, gui: Gui, audience: GuiAudience) :
+     }
+ 
+     override fun refresh(keepPrevious: Boolean): GuiRenderer {
+-        return ArtistAnvilGuiRenderer(this.gui().plugin, this.gui, this.audience, this)
++        val renderer = ArtistAnvilGuiRenderer(this.gui().plugin, this.gui, this.audience, this)
++        if (keepPrevious) {
++            if (this.leftInput != null) {
++                renderer.leftInput {
++                    image(this@ArtistAnvilGuiScene.leftInput!!.image)
++                    click(this@ArtistAnvilGuiScene.leftInput!!.click)
++                }
++            }
++            if (this.rightInput != null) {
++                renderer.rightInput {
++                    image(this@ArtistAnvilGuiScene.rightInput!!.image)
++                    click(this@ArtistAnvilGuiScene.rightInput!!.click)
++                }
++            }
++            if (this.result != null) {
++                renderer.result {
++                    click(this@ArtistAnvilGuiScene.result!!.click)
++                }
++            }
++            if (this.resulter != null) {
++                renderer.resulter(this.resulter!!)
++            }
++            renderer.text(this.text)
++            renderer.close(this.closer)
++            renderer.title(this.title)
++        }
++        return renderer
+     }
+ 
+     fun rerender(title: Component?, closer: Closer, text: String?, leftInput: ArtistSlot?, rightInput: ArtistSlot?, result: ArtistSlot?, resulter: AnvilResulter?) {
+@@ -100,8 +128,18 @@ class ArtistAnvilGuiScene(title: Component?, gui: Gui, audience: GuiAudience) :
+         this.resulter = resulter
+         this.fakeAnvil.anvilResulter = resulter
+         this.bukkitInventory.clear()
+-        this.bukkitInventory.setItem(0, leftInput!!.image.render(ArtistAnvilSlotContext(AnvilSlot.LEFT_INPUT, this, null, null)))
+-        this.bukkitInventory.setItem(1, rightInput!!.image.render(ArtistAnvilSlotContext(AnvilSlot.RESULT, this, null, null)))
++        if (leftInput != null) {
++            this.bukkitInventory.setItem(
++                0,
++                leftInput.image.render(ArtistAnvilSlotContext(AnvilSlot.LEFT_INPUT, this, null, null))
++            )
++        }
++        if (rightInput != null) {
++            this.bukkitInventory.setItem(
++                1,
++                rightInput.image.render(ArtistAnvilSlotContext(AnvilSlot.RIGHT_INPUT, this, null, null))
++            )
++        }
+     }
+ 
+     override fun asBukkit(): Inventory {
+@@ -136,6 +174,7 @@ class ArtistAnvilGuiScene(title: Component?, gui: Gui, audience: GuiAudience) :
+         if (event.view.topInventory != this.bukkitInventory)
+             return
+         HandlerList.unregisterAll(this)
++        this.closer.close(this)
+     }
+ 
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/anvil/FakeAnvil.kt b/src/main/kotlin/net/deechael/artist/gui/anvil/FakeAnvil.kt
+index 3ae28d28cf420357861f9891a0b26fec6690b93c..e79e1ffb81f0e2ddd18943ddf73b009d0ae1f417 100644
+--- a/src/main/kotlin/net/deechael/artist/gui/anvil/FakeAnvil.kt
++++ b/src/main/kotlin/net/deechael/artist/gui/anvil/FakeAnvil.kt
+@@ -25,6 +25,8 @@ class FakeAnvil(
+         this.checkReachable = false
+     }
+ 
++    private var text: String = ""
++
+     override fun createResult() {
+         val output: Slot = this.getSlot(2)
+         if (this.anvilResulter != null) {
+@@ -37,6 +39,7 @@ class FakeAnvil(
+         } else {
+             output.set(this.getSlot(0).item.copy())
+         }
++        this.itemName = this.text
+         this.cost.set(0)
+         this.sendAllDataToRemote()
+         this.broadcastChanges()
+@@ -51,6 +54,7 @@ class FakeAnvil(
+ 
+     fun setText(text: String) {
+         this.itemName = text
++        this.text = text
+     }
+ 
+     fun getBukkitInventory(): Inventory {
+diff --git a/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGui.kt b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGui.kt
+index e894daca41e7d28de1427935dbb4b28abc5e186a..544a4bd032d26ca2adec89ad7e9016ab0cea5c38 100644
+--- a/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGui.kt
++++ b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGui.kt
+@@ -12,7 +12,7 @@ class ArtistNormalGui(plugin: Plugin, type: GuiType) : ArtistGui(plugin), Normal
+     private val lines: Int
+ 
+     init {
+-        this.lines = type.name.substring(8, 9).toInt()
++        this.lines = type.name.substring(7, 8).toInt()
+     }
+ 
+     override fun lines(): Int {
+diff --git a/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiScene.kt b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiScene.kt
+index 76faf9e4868c4f18725eaca6fd301dd441c9d53d..b19f8fc02ef56cd0917157c12e4d51fab44177bc 100644
+--- a/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiScene.kt
++++ b/src/main/kotlin/net/deechael/artist/gui/normal/ArtistNormalGuiScene.kt
+@@ -38,10 +38,12 @@ class ArtistNormalGuiScene(
+ 
+     private val menuType: MenuType<ChestMenu>
+ 
++    private var title: Component?
+     private var closer: Closer = Closer {}
+     private val slots = mutableMapOf<Int, ArtistSlot>()
+ 
+     init {
++        this.title = title
+         this.gui as ArtistNormalGui
+         if (this.gui.lines() == 1) {
+             this.menuType = MenuType.GENERIC_9x1
+@@ -79,11 +81,23 @@ class ArtistNormalGuiScene(
+ 
+     override fun refresh(keepPrevious: Boolean): NormalGuiRenderer {
+         this.gui as ArtistNormalGui
+-        return ArtistNormalGuiRenderer(this.gui.plugin, this.gui, this.audience, this)
++        val renderer = ArtistNormalGuiRenderer(this.gui.plugin, this.gui, this.audience, this)
++        if (keepPrevious) {
++            this.slots.forEach { (index, slot) ->
++                renderer.slot(index) {
++                    image(slot.image)
++                    click(slot.click)
++                }
++            }
++            renderer.close(this.closer)
++            renderer.title(this.title)
++        }
++        return renderer
+     }
+ 
+     fun rerender(title: Component?, closer: Closer, slots: Map<Int, ArtistSlot>) {
+         if (title != null) {
++            this.title = title
+             val serverPlayer = (this.audience as CraftPlayer).handle
+             val titlePacket = ClientboundOpenScreenPacket(
+                 serverPlayer.containerMenu.containerId,
+@@ -137,6 +151,7 @@ class ArtistNormalGuiScene(
+         if (event.inventory.holder != this)
+             return
+         HandlerList.unregisterAll(this)
++        this.closer.close(this)
+     }
+ 
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistItemSlot.kt b/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistItemSlot.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..4684a75e18cbd59ff82e611ea9d2a9b07bb4e3aa
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistItemSlot.kt
+@@ -0,0 +1,24 @@
++package net.deechael.artist.gui.pageable
++
++import net.deechael.gui.pageable.ItemClicker
++import net.deechael.gui.pageable.ItemImager
++import net.deechael.gui.pageable.ItemSlot
++import org.bukkit.Material
++import org.bukkit.inventory.ItemStack
++
++class ArtistItemSlot<T>: ItemSlot<T> {
++
++    var image: ItemImager<T> = ItemImager { _, _ -> ItemStack(Material.AIR) }
++        private set
++    var click: ItemClicker<T> = ItemClicker { _, _, _ -> }
++        private set
++
++    override fun image(image: ItemImager<T>) {
++        this.image = image
++    }
++
++    override fun click(click: ItemClicker<T>) {
++        this.click = click
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistPageableGui.kt b/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistPageableGui.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..ef8b608cc9b5c7a3e0328f2f67e3e7a538939c3a
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistPageableGui.kt
+@@ -0,0 +1,25 @@
++package net.deechael.artist.gui.pageable
++
++import net.deechael.artist.gui.ArtistGui
++import net.deechael.gui.GuiAudience
++import net.deechael.gui.GuiType
++import net.deechael.gui.pageable.PageableGui
++import net.deechael.gui.pageable.PageableGuiRenderer
++import org.bukkit.plugin.Plugin
++
++class ArtistPageableGui<T>(plugin: Plugin, type: GuiType) : ArtistGui(plugin), PageableGui<T> {
++
++    private val lines: Int
++
++    init {
++        this.lines = type.name.substring(9, 10).toInt()
++    }
++
++    override fun lines(): Int {
++        return this.lines
++    }
++
++    override fun render(audience: GuiAudience): PageableGuiRenderer<T> {
++        TODO("Not yet implemented")
++    }
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistPageableRenderer.kt b/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistPageableRenderer.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..8806aad24d44e31403feeea5ffa3553af5df47cc
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistPageableRenderer.kt
+@@ -0,0 +1,75 @@
++package net.deechael.artist.gui.pageable
++
++import net.deechael.artist.gui.ArtistGuiRenderer
++import net.deechael.artist.gui.ArtistSlot
++import net.deechael.gui.Gui
++import net.deechael.gui.GuiAudience
++import net.deechael.gui.Slot
++import net.deechael.gui.pageable.ItemSlot
++import net.deechael.gui.pageable.PageableGui
++import net.deechael.gui.pageable.PageableGuiRenderer
++import net.deechael.gui.pageable.PageableGuiScene
++import org.bukkit.plugin.Plugin
++import java.lang.RuntimeException
++
++class ArtistPageableRenderer<T>(
++    plugin: Plugin,
++    gui: Gui,
++    audience: GuiAudience,
++    private val previousScene: ArtistPageableScene<T>? = null
++) : ArtistGuiRenderer(
++    plugin,
++    gui,
++    audience
++), PageableGuiRenderer<T> {
++
++    private val slots = mutableMapOf<Int, ArtistSlot>()
++    private val itemSlots = mutableListOf<Int>()
++    private var itemSlot: ItemSlot<T>? = null
++    private val items = mutableListOf<T>()
++    private var page = 1
++
++    @Suppress("UNCHECKED_CAST")
++    override fun gui(): PageableGui<T> {
++        return super.gui() as PageableGui<T>
++    }
++
++    override fun slot(raw: Int, builder: Slot.() -> Unit): PageableGuiRenderer<T> {
++        this.slots[raw] = ArtistSlot().apply(builder)
++        return this
++    }
++
++    override fun itemSlot(raw: Int): PageableGuiRenderer<T> {
++        this.itemSlots.add(raw)
++        return this
++    }
++
++    override fun page(int: Int): PageableGuiRenderer<T> {
++        this.page = int
++        return this
++    }
++
++    override fun render(): PageableGuiScene<T> {
++        if (this.itemSlot == null)
++            throw RuntimeException("Please define how to render item")
++        if (this.itemSlots.isEmpty())
++            throw RuntimeException("Please set slot to place item")
++        val scene = this.previousScene ?: ArtistPageableScene(this.title, this.gui(), this.audience())
++        scene.rerender(this.title, this.close, this.slots, this.itemSlots, this.itemSlot!!, this.items, this.page)
++        return scene
++    }
++
++    override fun supply(items: List<T>, clear: Boolean): PageableGuiRenderer<T> {
++        if (clear) {
++            this.items.clear()
++        }
++        this.items.addAll(items)
++        return this
++    }
++
++    override fun item(slot: ItemSlot<T>): PageableGuiRenderer<T> {
++        this.itemSlot = slot
++        return this
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistPageableScene.kt b/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistPageableScene.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..4aeb5bd15933b83d8444ccf417fde7133c8cd007
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistPageableScene.kt
+@@ -0,0 +1,220 @@
++package net.deechael.artist.gui.pageable
++
++import io.papermc.paper.adventure.PaperAdventure
++import net.deechael.artist.gui.ArtistScene
++import net.deechael.artist.gui.ArtistSlot
++import net.deechael.artist.gui.normal.ArtistNormalGui
++import net.deechael.artist.gui.normal.ArtistNormalSlotContext
++import net.deechael.gui.Closer
++import net.deechael.gui.Gui
++import net.deechael.gui.GuiAudience
++import net.deechael.gui.pageable.ItemSlot
++import net.deechael.gui.pageable.PageableGui
++import net.deechael.gui.pageable.PageableGuiRenderer
++import net.deechael.gui.pageable.PageableGuiScene
++import net.kyori.adventure.text.Component
++import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket
++import net.minecraft.server.level.ServerPlayer
++import net.minecraft.world.inventory.ChestMenu
++import net.minecraft.world.inventory.MenuType
++import org.bukkit.Bukkit
++import org.bukkit.craftbukkit.entity.CraftPlayer
++import org.bukkit.event.EventHandler
++import org.bukkit.event.HandlerList
++import org.bukkit.event.Listener
++import org.bukkit.event.inventory.InventoryAction
++import org.bukkit.event.inventory.InventoryClickEvent
++import org.bukkit.event.inventory.InventoryCloseEvent
++import org.bukkit.inventory.Inventory
++import org.bukkit.inventory.ItemStack
++import org.bukkit.scheduler.BukkitRunnable
++import java.util.*
++
++class ArtistPageableScene<T>(
++    title: Component?,
++    gui: PageableGui<T>,
++    audience: GuiAudience
++) : ArtistScene(gui, audience), PageableGuiScene<T>, Listener {
++
++    private val bukkitInventory: Inventory
++
++    private val menuType: MenuType<ChestMenu>
++
++    private var title: Component?
++    private var closer: Closer = Closer {}
++    private val slots = mutableMapOf<Int, ArtistSlot>()
++    private val itemSlots = mutableListOf<Int>()
++    private var itemRenderer: ItemSlot<T> = ArtistItemSlot()
++    private val items = mutableListOf<T>()
++    private val itemsMap = mutableMapOf<Int, T>()
++    private var page = 1
++
++    init {
++        this.title = title
++        this.gui as ArtistNormalGui
++        if (this.gui.lines() == 1) {
++            this.menuType = MenuType.GENERIC_9x1
++        } else if (this.gui.lines() == 2) {
++            this.menuType = MenuType.GENERIC_9x2
++        } else if (this.gui.lines() == 3) {
++            this.menuType = MenuType.GENERIC_9x3
++        } else if (this.gui.lines() == 4) {
++            this.menuType = MenuType.GENERIC_9x4
++        } else if (this.gui.lines() == 5) {
++            this.menuType = MenuType.GENERIC_9x5
++        } else {
++            this.menuType = MenuType.GENERIC_9x6
++        }
++        this.bukkitInventory = if (title == null) {
++            Bukkit.createInventory(this, this.gui.lines() * 9)
++        } else {
++            Bukkit.createInventory(this, this.gui.lines() * 9, title)
++        }
++        this.audience.getGuiContext().setScene(this)
++        Bukkit.getPluginManager().registerEvents(this, this.gui.plugin)
++    }
++
++    @Suppress("UNCHECKED_CAST")
++    override fun gui(): ArtistPageableGui<T> {
++        return super.gui() as ArtistPageableGui<T>
++    }
++
++    override fun getInventory(): Inventory {
++        return this.bukkitInventory
++    }
++
++    override fun open(player: ServerPlayer) {
++        player.bukkitEntity.openInventory(this.bukkitInventory)
++    }
++
++    @Suppress("UNCHECKED_CAST")
++    override fun refresh(keepPrevious: Boolean): PageableGuiRenderer<T> {
++        this.gui as ArtistPageableGui<T>
++        val renderer = ArtistPageableRenderer(this.gui.plugin, this.gui, this.audience, this)
++        this.slots.forEach { (index, slot) ->
++            renderer.slot(index) {
++                image(slot.image)
++                click(slot.click)
++            }
++        }
++        this.itemSlots.forEach(renderer::itemSlot)
++        renderer.item(this.itemRenderer)
++        renderer.close(this.closer)
++        renderer.title(this.title)
++        renderer.page(this.page)
++        renderer.supply(this.items)
++        return renderer
++    }
++
++    fun rerender(
++        title: Component?,
++        closer: Closer,
++        slots: Map<Int, ArtistSlot>,
++        itemSlots: List<Int>,
++        itemSlot: ItemSlot<T>,
++        items: List<T>,
++        page: Int
++    ) {
++        if (title != null) {
++            this.title = title
++            val serverPlayer = (this.audience as CraftPlayer).handle
++            val titlePacket = ClientboundOpenScreenPacket(
++                serverPlayer.containerMenu.containerId,
++                this.menuType,
++                PaperAdventure.asVanilla(title)
++            )
++            serverPlayer.connection.send(titlePacket)
++        }
++        this.closer = closer
++        this.bukkitInventory.clear()
++        this.slots.clear()
++        this.slots.putAll(slots)
++        this.slots.forEach { (index, slot) ->
++            val context = ArtistNormalSlotContext(index, this, null, null)
++            val item = slot.image.render(context) ?: return@forEach
++            this.bukkitInventory.setItem(index, item)
++        }
++        this.itemRenderer = itemSlot
++        this.itemSlots.clear()
++        this.itemSlots.addAll(itemSlots)
++        this.itemSlots.sortBy { it }
++        this.items.clear()
++        this.itemsMap.clear()
++        this.items.addAll(items)
++        this.page = page
++
++        val pages = if (this.items.size % this.itemSlots.size == 0) this.items.size / this.itemSlots.size else (this.items.size / this.itemSlots.size) + 1
++        if (page > pages)
++            this.page = pages
++        if (page <= 0)
++            this.page = 1
++        val renderer = this.itemRenderer as ArtistItemSlot<T>
++        for (i in (this.itemSlots.size * (this.page - 1)) until (this.itemSlots.size * (this.page))) {
++            val slot = this.itemSlots[i]
++            val item = this.items[i]
++            val context = ArtistPageableSlotContext(
++                slot,
++                this.page,
++                item,
++                this,
++                null,
++                null
++            )
++            this.itemsMap[slot] = item
++            this.bukkitInventory.setItem(slot, renderer.image.render(item, context))
++        }
++    }
++
++    override fun item(raw: Int): ItemStack? {
++        return bukkitInventory.getItem(raw)
++    }
++
++    override fun asBukkit(): Inventory {
++        return this.bukkitInventory
++    }
++
++    @EventHandler
++    fun event(event: InventoryClickEvent) {
++        if (event.view.topInventory.holder != this)
++            return
++        if (Objects.equals(event.clickedInventory, event.view.bottomInventory) && event.action == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
++            event.isCancelled = true
++            return
++        }
++        if (!Objects.equals(event.clickedInventory, event.view.topInventory))
++            return
++        event.isCancelled = true
++        if (this@ArtistPageableScene.itemSlots.contains(event.rawSlot)) {
++            object : BukkitRunnable() {
++                override fun run() {
++                    val item = this@ArtistPageableScene.itemsMap[event.rawSlot]!!
++                    val context = ArtistPageableSlotContext(
++                        event.rawSlot,
++                        this@ArtistPageableScene.page,
++                        item,
++                        this@ArtistPageableScene,
++                        event.click,
++                        event.action
++                    )
++                    (this@ArtistPageableScene.itemRenderer as ArtistItemSlot<T>).click.click(item, context, event.cursor)
++                }
++            }.runTaskLater(this.gui().plugin, 1L)
++        } else if (!this.slots.containsKey(event.rawSlot))
++            return
++        object : BukkitRunnable() {
++            override fun run() {
++                val context = ArtistNormalSlotContext(event.rawSlot, this@ArtistPageableScene, event.click, event.action)
++                this@ArtistPageableScene.slots[event.rawSlot]!!.click.click(context, event.cursor)
++            }
++        }.runTaskLater(this.gui().plugin, 1L)
++    }
++
++    @EventHandler
++    fun event(event: InventoryCloseEvent) {
++        if (event.inventory.holder != this)
++            return
++        HandlerList.unregisterAll(this)
++        this.closer.close(this)
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistPageableSlotContext.kt b/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistPageableSlotContext.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..e396200637d736a20f55b4d5c99e44cf4ca28393
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/artist/gui/pageable/ArtistPageableSlotContext.kt
+@@ -0,0 +1,32 @@
++package net.deechael.artist.gui.pageable
++
++import net.deechael.artist.gui.ArtistSlotContext
++import net.deechael.gui.Scene
++import net.deechael.gui.pageable.PageableSlotContext
++import org.bukkit.event.inventory.ClickType
++import org.bukkit.event.inventory.InventoryAction
++
++class ArtistPageableSlotContext<T>(
++    private val slot: Int,
++    private val page: Int,
++    private val item: T,
++    scene: Scene,
++    clickType: ClickType?,
++    action: InventoryAction?
++) : ArtistSlotContext(scene, clickType,
++    action
++), PageableSlotContext<T> {
++
++    override fun slot(): Int {
++        return this.slot
++    }
++
++    override fun page(): Int {
++        return this.page
++    }
++
++    override fun item(): T {
++        return this.item
++    }
++
++}
+\ No newline at end of file

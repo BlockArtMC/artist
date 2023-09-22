@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: DeeChael <DeeChael@outlook.com>
+Date: Fri, 22 Sep 2023 23:27:15 +0800
+Subject: [PATCH] feat: pageable gui
+
+
+diff --git a/src/main/kotlin/net/deechael/gui/pageable/ItemClicker.kt b/src/main/kotlin/net/deechael/gui/pageable/ItemClicker.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..8f9c331f4289ba61301ab7f08228f3dbbce6f965
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/pageable/ItemClicker.kt
+@@ -0,0 +1,10 @@
++package net.deechael.gui.pageable
++
++import net.deechael.gui.SlotContext
++import org.bukkit.inventory.ItemStack
++
++fun interface ItemClicker<T> {
++
++    fun click(item: T, context: SlotContext, cursor: ItemStack?)
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/pageable/ItemImager.kt b/src/main/kotlin/net/deechael/gui/pageable/ItemImager.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..4f9c7168cf09c71b63eb1629e506e88e3676f4bd
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/pageable/ItemImager.kt
+@@ -0,0 +1,10 @@
++package net.deechael.gui.pageable
++
++import net.deechael.gui.SlotContext
++import org.bukkit.inventory.ItemStack
++
++fun interface ItemImager<T> {
++
++    fun render(item: T, context: SlotContext): ItemStack
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/pageable/ItemSlot.kt b/src/main/kotlin/net/deechael/gui/pageable/ItemSlot.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..116e7ae7a9f90cf0a896fdca3f2d0c7ca44111f5
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/pageable/ItemSlot.kt
+@@ -0,0 +1,9 @@
++package net.deechael.gui.pageable
++
++interface ItemSlot<T> {
++
++    fun image(image: ItemImager<T>)
++
++    fun click(click: ItemClicker<T>)
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/pageable/PageableGui.kt b/src/main/kotlin/net/deechael/gui/pageable/PageableGui.kt
+index 1c350ed68ff8d51688bdc82d26cda8a6463a7447..c81f17eb0643545604372f51666b52a133c02850 100644
+--- a/src/main/kotlin/net/deechael/gui/pageable/PageableGui.kt
++++ b/src/main/kotlin/net/deechael/gui/pageable/PageableGui.kt
+@@ -1,6 +1,12 @@
+ package net.deechael.gui.pageable
+ 
+ import net.deechael.gui.Gui
++import net.deechael.gui.GuiAudience
++
++interface PageableGui<T> : Gui {
++
++    fun lines(): Int
++
++    override fun render(audience: GuiAudience): PageableGuiRenderer<T>
+ 
+-interface PageableGui : Gui {
+ }
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/pageable/PageableGuiRenderer.kt b/src/main/kotlin/net/deechael/gui/pageable/PageableGuiRenderer.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..222acad82db9b374aae244df00f36b9d3eb11ae0
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/pageable/PageableGuiRenderer.kt
+@@ -0,0 +1,22 @@
++package net.deechael.gui.pageable
++
++import net.deechael.gui.GuiRenderer
++import net.deechael.gui.Slot
++
++interface PageableGuiRenderer<T> : GuiRenderer {
++
++    override fun gui(): PageableGui<T>
++
++    fun slot(raw: Int, builder: Slot.() -> Unit): PageableGuiRenderer<T>
++
++    fun itemSlot(raw: Int): PageableGuiRenderer<T>
++
++    fun item(slot: ItemSlot<T>): PageableGuiRenderer<T>
++
++    fun page(int: Int): PageableGuiRenderer<T>
++
++    fun supply(items: List<T>, clear: Boolean = false): PageableGuiRenderer<T>
++
++    override fun render(): PageableGuiScene<T>
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/pageable/PageableGuiScene.kt b/src/main/kotlin/net/deechael/gui/pageable/PageableGuiScene.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..9b19a7a1e7569fa20a9c9087e580b5c17950f77c
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/pageable/PageableGuiScene.kt
+@@ -0,0 +1,12 @@
++package net.deechael.gui.pageable
++
++import net.deechael.gui.Scene
++import org.bukkit.inventory.ItemStack
++
++interface PageableGuiScene<T>: Scene {
++
++    override fun refresh(keepPrevious: Boolean): PageableGuiRenderer<T>
++
++    fun item(raw: Int): ItemStack?
++
++}
+\ No newline at end of file
+diff --git a/src/main/kotlin/net/deechael/gui/pageable/PageableSlotContext.kt b/src/main/kotlin/net/deechael/gui/pageable/PageableSlotContext.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..8f116db9f0504fca505bcbb4105872658b9826bb
+--- /dev/null
++++ b/src/main/kotlin/net/deechael/gui/pageable/PageableSlotContext.kt
+@@ -0,0 +1,13 @@
++package net.deechael.gui.pageable
++
++import net.deechael.gui.SlotContext
++
++interface PageableSlotContext<T> : SlotContext {
++
++    fun slot(): Int
++
++    fun page(): Int
++
++    fun item(): T
++
++}
+\ No newline at end of file
